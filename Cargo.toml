@@ -1,0 +1,31 @@
+[package]
+name = "lnapi"
+version = "0.1.0"
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+futures = "0.3.1"
+rocket = "0.5.0-rc.1"
+juniper = "0.15.7"
+juniper_rocket = "0.8.0"
+diesel = { version = "1.4.7", features = ["postgres","r2d2","chrono","uuidv07"] }
+dotenv = "0.15.0"
+chrono = "0.4.19"
+itconfig = { version = "1", features = ["macro"] }
+diesel-derive-enum = { version = "1.1.1", features = ["postgres"] }
+lazy_static = "1.4.0"
+derive_more = "0.99.16"
+tonic_lnd = "0.1.1"
+tonic = "^0.4.3"
+lnrpc = "0.1.0"
+hex = "0.4.3"
+serde_json = "1.0.68"
+lightning-invoice = "0.10.0"
+diesel_migrations = "1.4.0"
+uuid = { version = "0.8.2", features = ["serde", "v4"] }
+
+[dependencies.rocket_sync_db_pools]
+version = "0.1.0-rc.1"
+features = ["diesel_postgres_pool"]
