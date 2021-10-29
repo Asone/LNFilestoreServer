@@ -1,11 +1,9 @@
 pub use crate::db::schema::payment;
-use crate::db::schema::post::dsl::post;
 use crate::lnd::invoice::LndInvoice;
 use diesel;
 use diesel::prelude::*;
 use diesel::PgConnection;
 use uuid::Uuid;
-use super::Post;
 
 
 #[derive(Queryable, PartialEq,  Associations)]
@@ -41,14 +39,6 @@ impl From<(LndInvoice, uuid::Uuid)> for NewPayment {
 }
 
 impl Payment {
-
-    pub fn find_one_by_uuid(payment_uuid: Uuid, connection: &PgConnection) -> Option<Payment> {
-         use crate::db::schema::payment::dsl::*;
-        payment.filter(uuid.eq(payment_uuid))
-        .first::<Payment>(connection)
-        .optional()
-        .unwrap()
-    }
 
     pub fn find_one_by_request(payment_request: String, connection: &PgConnection) -> Option<Payment> {
          use crate::db::schema::payment::dsl::*;
