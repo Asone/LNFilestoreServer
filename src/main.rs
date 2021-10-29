@@ -9,9 +9,7 @@ extern crate diesel;
 
 #[macro_use]
 extern crate diesel_derive_enum;
-
 extern crate dotenv;
-extern crate lnrpc;
 extern crate tonic;
 
 mod app;
