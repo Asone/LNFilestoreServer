@@ -66,7 +66,7 @@ There is currently a single mutation available through the API, that allows you 
 
 Request : 
 
-````json
+````graphql
 mutation {
   createPost(post: {
     title: "Ad lorem ipsum",
@@ -100,7 +100,7 @@ will return:
 #### **Get posts list**
 
 Request : 
-```json
+```graphql
 {
   getPostsList{
     uuid
@@ -146,7 +146,7 @@ The request takes an object with two fields :
 
 For example, providing the request like this : 
 
-```json
+```graphql
 {
   getPost(post:{
     uuid: "9f3711b4-f733-4911-9863-0c4ee575ca10"
@@ -191,7 +191,7 @@ It provides a `payment_request` which will allow user to pay to access the conte
 
 The user can try to refetch the content providing the same `payment_request` within the request.
 
-```json
+```graphql
 {
   getPost(post:{
     uuid: "9f3711b4-f733-4911-9863-0c4ee575ca10",
