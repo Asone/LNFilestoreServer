@@ -186,7 +186,7 @@ You'll get a response similar to this :
 }
 ```
 
-Note the [extensions](https://dgraph.io/docs/graphql/api/requests/#extensions-field) sub-object which are part of the graphQL spec.
+Note the [extensions](https://github.com/graphql/graphql-spec/blame/main/spec/Section%207%20--%20Response.md#L201-L204) sub-object which are part of the graphQL spec.
 It provides a `payment_request` which will allow user to pay to access the content.
 
 The user can try to refetch the content providing the same `payment_request` within the request.
