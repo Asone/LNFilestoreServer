@@ -79,8 +79,8 @@ impl Post {
             .unwrap()
     }
 
-    pub fn findAll(connection: &PgConnection) -> Vec<Post> {
+    pub fn find_all_published(connection: &PgConnection) -> Vec<Post> {
         use crate::db::schema::post::dsl::*;
-        post.load(connection).unwrap()
+        post.filter(published.eq(true)).load(connection).unwrap()
     }
 }
