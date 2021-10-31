@@ -14,6 +14,15 @@ pub fn graphiql() -> content::Html<String> {
     juniper_rocket::graphiql_source("/graphql", None)
 }
 
+/*
+  This is a void handler that will return a 200 empty response
+  for browsers that intends to check pre-flight for CORS rules.
+ */
+#[rocket::options("/graphql")]
+pub async fn options_handler() {
+
+}
+
 #[rocket::get("/graphql?<request>")]
 pub async fn get_graphql_handler(
     request: juniper_rocket::GraphQLRequest,
