@@ -1,5 +1,7 @@
 # GraphQLN Api
 
+ ![graphQLN](https://github.com/Asone/graphQLN/actions/workflows/rust.yml/badge.svg)
+
 This project is a demo of a [graphQL](https://graphql.org/) API with a built-in bitcoin [lightning network](https://en.wikipedia.org/wiki/Lightning_Network) paywall mechanism, built with [Rustlang](https://www.rust-lang.org/).
 
 
