@@ -5,6 +5,7 @@ table! {
         state -> Nullable<Text>,
         hash -> Text,
         post_uuid -> Uuid,
+        expires_at -> Timestamptz,
     }
 }
 
@@ -22,7 +23,4 @@ table! {
 
 joinable!(payment -> post (post_uuid));
 
-allow_tables_to_appear_in_same_query!(
-    payment,
-    post,
-);
+allow_tables_to_appear_in_same_query!(payment, post,);

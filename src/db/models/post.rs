@@ -20,10 +20,8 @@ pub struct Post {
     pub price: i32,
 }
 
-
 impl Post {
-
-    // Allow to check if post has a price 
+    // Allow to check if post has a price
     // so we can build and call the paywall
     // when someone requests the content of post
     pub fn is_payable(&self) -> bool {
@@ -37,7 +35,7 @@ impl Post {
 
 #[derive(Debug, Insertable)]
 #[table_name = "post"]
-pub struct NewPost{
+pub struct NewPost {
     pub uuid: uuid::Uuid,
     pub title: String,
     pub content: String,
@@ -46,7 +44,7 @@ pub struct NewPost{
     pub price: i32,
 }
 
-impl  From<CreatePostInput> for NewPost{
+impl From<CreatePostInput> for NewPost {
     fn from(item: CreatePostInput) -> Self {
         Self {
             uuid: Uuid::new_v4(),
@@ -60,7 +58,6 @@ impl  From<CreatePostInput> for NewPost{
 }
 
 impl Post {
-
     // Creates a post
     pub fn create(new_post: NewPost, connection: &PgConnection) -> QueryResult<Post> {
         use crate::db::schema::post::dsl::*;

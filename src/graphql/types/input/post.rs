@@ -15,8 +15,7 @@ pub struct PayablePostInput {
     pub uuid: uuid::Uuid,
 }
 
-impl PayablePostInput {
-}
+impl PayablePostInput {}
 
 #[derive(GraphQLInputObject)]
 pub struct CreatePostInput {

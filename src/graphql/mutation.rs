@@ -2,7 +2,10 @@ use juniper::{FieldError, FieldResult};
 
 use crate::db::models::post::{NewPost, Post};
 
-use super::{context::GQLContext, types::{input::post::CreatePostInput, output::post::PostType}};
+use super::{
+    context::GQLContext,
+    types::{input::post::CreatePostInput, output::post::PostType},
+};
 
 pub struct Mutation;
 
@@ -14,7 +17,9 @@ impl Mutation {
     ) -> FieldResult<PostType> {
         // context.pool
         let connection = context.get_db_connection();
-        let result = connection.run(|c| Post::create(NewPost::from(post), c)).await;
+        let result = connection
+            .run(|c| Post::create(NewPost::from(post), c))
+            .await;
 
         match result {
             Ok(r) => Ok(PostType::from(r)),
