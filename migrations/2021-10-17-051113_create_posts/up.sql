@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS "payment" (
     "state" text,
     "hash" TEXT UNIQUE NOT NULL,
     "post_uuid" uuid references post(uuid) NOT NULL,
+    "expires_at" TIMESTAMP WITH TIME ZONE NOT NULL,
     PRIMARY KEY( uuid )
 );
 

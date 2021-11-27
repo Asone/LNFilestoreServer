@@ -3,7 +3,7 @@ use chrono::NaiveDateTime;
 use crate::db::models::Post;
 
 #[derive(GraphQLObject)]
-#[graphql(description="Full Post output type")]
+#[graphql(description = "Full Post output type")]
 pub struct PostType {
     pub uuid: uuid::Uuid,
     pub title: String,
@@ -28,10 +28,9 @@ impl From<Post> for PostType {
     }
 }
 
-
 #[derive(GraphQLObject)]
-#[graphql(description="Preview Post output type")]
-pub struct PreviewPostType{
+#[graphql(description = "Preview Post output type")]
+pub struct PreviewPostType {
     pub uuid: uuid::Uuid,
     pub title: String,
     pub excerpt: String,

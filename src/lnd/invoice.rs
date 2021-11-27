@@ -1,3 +1,4 @@
+use chrono::{Duration, NaiveDateTime, Utc};
 use tonic::{Code, Status};
 use tonic_lnd::rpc::{Invoice, PaymentHash};
 
@@ -8,29 +9,33 @@ use crate::graphql::context::GQLContext;
 use lightning_invoice::*;
 
 /*
-    Represents a simplified invoice object. 
-    This allow us to keep only the critical data we need from an
-    invoice object
- */
+   Represents a simplified invoice object.
+   This allow us to keep only the critical data we need from an
+   invoice object
+*/
 #[derive(Clone)]
 pub struct LndInvoice {
     pub memo: String,
     pub payment_request: String,
     pub value: i32,
     pub r_hash: String,
+    pub expires_at: NaiveDateTime,
 }
-
 
 impl LndInvoice {
     /*
       Creates an LndInvoice from an Invoice retrieved through RPC + its rHash
     */
     pub fn new(invoice: tonic_lnd::rpc::Invoice, r_hash: String) -> Self {
+        let expires_at = Utc::now()
+            .checked_add_signed(Duration::seconds(invoice.expiry))
+            .unwrap();
         Self {
             payment_request: invoice.payment_request,
             memo: invoice.memo,
             value: invoice.value as i32,
             r_hash: r_hash,
+            expires_at: expires_at.naive_utc(),
         }
     }
 }
@@ -42,7 +47,6 @@ impl LndInvoice {
 pub struct InvoiceUtils {}
 
 impl InvoiceUtils {
-
     /**
         Generates an invoice.
         This shall be called whenever the user
@@ -51,11 +55,12 @@ impl InvoiceUtils {
     */
     pub async fn generate_invoice<'a>(context: &'a GQLContext, post: Post) -> LndInvoice {
         let mut client = context.get_lnd_client().clone();
-
+        let duration: i64 = 60;
         // Request invoice generation to the LN Server
         let add_invoice_response = client.add_invoice(tonic_lnd::rpc::Invoice {
-            memo: format!("GraphQLN API post buy : {}", post.title).to_string(),
+            memo: format!("buy {} : {}", post.uuid, post.title).to_string(),
             value: post.price as i64,
+            expiry: duration,
             ..tonic_lnd::rpc::Invoice::default()
         });
 
@@ -75,7 +80,6 @@ impl InvoiceUtils {
             .unwrap()
             .into_inner();
 
-        
         LndInvoice::new(invoice, hex::encode(result.r_hash))
     }
 

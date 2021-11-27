@@ -1,5 +1,3 @@
-
-
 use std::env::{self};
 
 use rocket::{
@@ -13,9 +11,9 @@ extern crate dotenv;
 pub struct LndClient(pub tonic_lnd::Client);
 
 /*
- The below implementation allows us to start the Lnd client instance that will
- be later used in a request process by being injected in context object
- */
+The below implementation allows us to start the Lnd client instance that will
+be later used in a request process by being injected in context object
+*/
 #[rocket::async_trait]
 impl<'r> FromRequest<'r> for LndClient {
     type Error = ();

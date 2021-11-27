@@ -1,47 +1,73 @@
 use super::types::input::post::PayablePostInput;
+use super::types::output::payment::PaymentType;
 use super::types::output::post::PostType;
 use super::types::output::post::PreviewPostType;
 use crate::db::models::payment::NewPayment;
 use crate::db::models::payment::Payment;
 use crate::lnd::invoice::InvoiceUtils;
-use crate::{
-    db::models::{ Post},
-    graphql::context::GQLContext,
-};
+use crate::{db::models::Post, graphql::context::GQLContext};
 use juniper::{FieldError, Value};
-use tonic_lnd::rpc::{invoice::InvoiceState};
+use tonic_lnd::rpc::invoice::InvoiceState;
 use uuid::Uuid;
 
 pub struct Query;
 
 #[juniper::graphql_object(context = GQLContext)]
 impl Query {
-
-
     /*
-        Retrieves the list of posts from DB.
-        We use a specific post type here to limit the accessible information of posts through
-        the request
-     */
-    async fn get_posts_list(context: &'a GQLContext) -> Result<Vec<PreviewPostType>,FieldError>{
+       Retrieves the list of posts from DB.
+       We use a specific post type here to limit the accessible information of posts through
+       the request
+    */
+    async fn get_posts_list(context: &'a GQLContext) -> Result<Vec<PreviewPostType>, FieldError> {
         let connection = context.get_db_connection();
-        let db_results = connection
-            .run(move |c| Post::find_all_published(c))
+        let db_results = connection.run(move |c| Post::find_all_published(c)).await;
+
+        Ok(db_results
+            .into_iter()
+            .map(|p| PreviewPostType::from(p))
+            .collect::<Vec<PreviewPostType>>())
+    }
+
+    async fn requestInvoiceForPost(
+        context: &'a GQLContext,
+        post_id: uuid::Uuid,
+    ) -> Result<PaymentType, FieldError> {
+        let connection = context.get_db_connection();
+        let db_result = connection
+            .run(move |c| Post::find_one_by_id(post_id, c))
             .await;
 
-        Ok(db_results.into_iter().map(|p| PreviewPostType::from(p)).collect::<Vec<PreviewPostType>>())
-        
+        match db_result {
+            Some(post) => {
+                let invoice = InvoiceUtils::generate_invoice(context, post).await;
+                let payment = connection
+                    .run(move |c| Payment::create(NewPayment::from((invoice, post_id)), c))
+                    .await;
+
+                match payment {
+                    Ok(payment) => Ok(PaymentType::from(payment)),
+                    Err(_) => Err(FieldError::new(
+                        "Could not find post with provided uuid",
+                        Value::Null,
+                    )),
+                }
+            }
+            None => Err(FieldError::new(
+                "Could not find post with provided uuid",
+                Value::Null,
+            )),
+        }
     }
 
     /*
-        Gets a post. 
-        This is the main request where paywall shall be applied. 
-     */
+       Gets a post.
+       This is the main request where paywall shall be applied.
+    */
     async fn get_post<'a, 'b>(
         context: &'a GQLContext,
         post: PayablePostInput,
     ) -> Result<PostType, FieldError> {
-        
         let post_id: uuid::Uuid = post.uuid.clone();
         let connection = context.get_db_connection();
 
@@ -51,14 +77,20 @@ impl Query {
             .await;
 
         match result {
-            Some(r) => match r.published { // Checks if post is published
-                true =>  match r.is_payable() { // Checks if there should be a paywall ( price > 0 )
-                    true => match post.payment_request { // If payable, ensure there's a payment_request provided
-                        Some(payment_request) => { // payment_request found
+            Some(r) => match r.published {
+                // Checks if post is published
+                true => match r.is_payable() {
+                    // Checks if there should be a paywall ( price > 0 )
+                    true => match post.payment_request {
+                        // If payable, ensure there's a payment_request provided
+                        Some(payment_request) => {
+                            // payment_request found
 
                             // Search for payment entry based on the payment_request provided
                             let payment = connection
-                                .run(move |c| Payment::find_one_by_request(payment_request.clone(), c))
+                                .run(move |c| {
+                                    Payment::find_one_by_request(payment_request.clone(), c)
+                                })
                                 .await;
                             match payment {
                                 Some(payment) => { // Payment found
@@ -70,11 +102,11 @@ impl Query {
                                                 InvoiceState::Settled => Ok(PostType::from(r)), // Payment has been done. Serves the post
                                                 InvoiceState::Open => Err(FieldError::new(
                                                     "Awaiting for payment to be done.",
-                                                    Value::null(),
+                                                    graphql_value!({"state": "open"}),
                                                 )), // Payment hasn't been done yet. We shall wait for payment, so there's no need to regenerate an invoice
                                                 InvoiceState::Accepted => Err(FieldError::new(
                                                     "Payment ongoing but not settled yet",
-                                                    Value::null(),
+                                                    graphql_value!({"state": "ongoing"}),
                                                 )), // Payment is on process onto the network but has not reach its receiver yet. We shall wait, so there's no need to regenerate an invoice
                                                 InvoiceState::Canceled => Err(QueryUtils::generate_invoiced_error(context,post_id,r,"Payment expired or canceled.").await),
                                             },
@@ -92,48 +124,59 @@ impl Query {
                                 // Our DB does not contain any payment with the provided payment_request.
                                 None => Err(QueryUtils::generate_invoiced_error(context,post_id,r,"No recorded payment request related to the requested post found with the payment requested provided.").await)                            
                             }
-
                         }
-                        None => Err(QueryUtils::generate_invoiced_error(context,post_id,r,"Payable post. Payment not found.").await)
-                        
+                        None => Err(QueryUtils::generate_invoiced_error(
+                            context,
+                            post_id,
+                            r,
+                            "Payable post. Payment not found.",
+                        )
+                        .await),
                     },
                     false => Ok(PostType::from(r)), // Post has a price of 0 (free), so we serve it without condition
                 },
                 false => Err(FieldError::new("Post not found", Value::Null)), // Post not published
-            }
+            },
             // Post has not been found in DB
             None => Err(FieldError::new("Post not found", Value::Null)),
         }
     }
 }
 
-
-pub struct QueryUtils{}
+pub struct QueryUtils {}
 
 impl QueryUtils {
-
-    pub async fn generate_invoiced_error(context: &GQLContext,post_id: Uuid, post: Post, message: &str ) -> FieldError {
+    pub async fn generate_invoiced_error(
+        context: &GQLContext,
+        post_id: Uuid,
+        post: Post,
+        message: &str,
+    ) -> FieldError {
         let connection = context.get_db_connection();
         let invoice = InvoiceUtils::generate_invoice(context, post).await;
-        let payment = connection.run(move |c| Payment::create(NewPayment::from((invoice,post_id)), c)).await;
+        let payment = connection
+            .run(move |c| Payment::create(NewPayment::from((invoice, post_id)), c))
+            .await;
 
         match payment {
-            Ok(payment) => { 
-
+            Ok(payment) => {
                 let request = payment.request.as_str();
                 let hash = payment.hash.as_str();
 
                 FieldError::new(
-                    format!("{} Use provided payment request.",message),
-                    graphql_value!({"payment_request": request, "r_hash": hash})
-                )
-            },
-            Err(_) => {
-                FieldError::new(
-                    format!("{}. An error happened while trying to generate payment request",message),
-                    Value::null(),
+                    format!("{} Use provided payment request.", message),
+                    graphql_value!({"state": "open",
+                         "payment_request": request, 
+                         "r_hash": hash}),
                 )
             }
+            Err(_) => FieldError::new(
+                format!(
+                    "{}. An error happened while trying to generate payment request",
+                    message
+                ),
+                Value::null(),
+            ),
         }
     }
 }

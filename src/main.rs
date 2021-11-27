@@ -13,17 +13,22 @@ extern crate dotenv;
 extern crate tonic;
 
 mod app;
+mod cors;
 mod db;
 mod graphql;
 mod lnd;
-mod cors;
 use dotenv::dotenv;
-use rocket::Rocket;
 use juniper::EmptySubscription;
+use rocket::Rocket;
 
-use crate::{app::Schema, cors::Cors, graphql::context::GQLContext, graphql::{mutation::Mutation, query::Query}};
+use crate::{
+    app::Schema,
+    cors::Cors,
+    graphql::context::GQLContext,
+    graphql::{mutation::Mutation, query::Query},
+};
 
-use crate::app::{get_graphql_handler, graphiql, post_graphql_handler, options_handler};
+use crate::app::{get_graphql_handler, graphiql, options_handler, post_graphql_handler};
 use crate::db::PostgresConn;
 
 itconfig::config! {
@@ -47,7 +52,12 @@ async fn main() {
         ))
         .mount(
             "/",
-            rocket::routes![options_handler, graphiql, get_graphql_handler, post_graphql_handler],
+            rocket::routes![
+                options_handler,
+                graphiql,
+                get_graphql_handler,
+                post_graphql_handler
+            ],
         )
         .attach(Cors)
         .manage(Cors)
