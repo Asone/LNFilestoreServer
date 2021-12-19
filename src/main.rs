@@ -17,6 +17,7 @@ mod cors;
 mod db;
 mod graphql;
 mod lnd;
+mod requests;
 use dotenv::dotenv;
 use juniper::EmptySubscription;
 use rocket::Rocket;
@@ -28,7 +29,10 @@ use crate::{
     graphql::{mutation::Mutation, query::Query},
 };
 
-use crate::app::{get_graphql_handler, graphiql, options_handler, post_graphql_handler};
+use crate::app::{
+    get_graphql_handler, graphiql, options_handler, payable_post_graphql_handler,
+    post_graphql_handler,
+};
 use crate::db::PostgresConn;
 
 itconfig::config! {
@@ -56,7 +60,8 @@ async fn main() {
                 options_handler,
                 graphiql,
                 get_graphql_handler,
-                post_graphql_handler
+                post_graphql_handler,
+                payable_post_graphql_handler
             ],
         )
         .attach(Cors)

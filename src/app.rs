@@ -6,6 +6,7 @@ use rocket::{response::content, State};
 pub type Schema = RootNode<'static, Query, Mutation, EmptySubscription<GQLContext>>;
 
 use crate::db::PostgresConn;
+use crate::requests::header::PaymentRequestHeader;
 use juniper::{EmptySubscription, RootNode};
 use juniper_rocket::GraphQLResponse;
 
@@ -39,6 +40,19 @@ pub async fn post_graphql_handler(
     schema: &State<Schema>,
     db: PostgresConn,
     lnd: LndClient,
+) -> GraphQLResponse {
+    request
+        .execute(&*schema, &GQLContext { pool: db, lnd: lnd })
+        .await
+}
+
+#[rocket::post("/payable", data = "<request>")]
+pub async fn payable_post_graphql_handler(
+    request: juniper_rocket::GraphQLRequest,
+    schema: &State<Schema>,
+    db: PostgresConn,
+    lnd: LndClient,
+    payment_request: PaymentRequestHeader,
 ) -> GraphQLResponse {
     request
         .execute(&*schema, &GQLContext { pool: db, lnd: lnd })
