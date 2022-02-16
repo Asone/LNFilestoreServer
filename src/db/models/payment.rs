@@ -3,7 +3,6 @@ use crate::lnd::invoice::LndInvoice;
 use chrono::NaiveDateTime;
 use diesel;
 use diesel::prelude::*;
-use diesel::sql_types::Timestamp;
 use diesel::PgConnection;
 use uuid::Uuid;
 
@@ -11,18 +10,18 @@ use uuid::Uuid;
 #[table_name = "payment"]
 #[belongs_to(parent = Post, foreign_key = "post_uuid")]
 pub struct Payment {
-    pub uuid: uuid::Uuid,
+    pub uuid: Uuid,
     pub request: String,
     pub state: Option<String>,
     pub hash: String,
-    pub post_uuid: uuid::Uuid,
+    pub post_uuid: Uuid,
     pub expires_at: NaiveDateTime,
 }
 
 #[derive(Debug, Insertable)]
 #[table_name = "payment"]
 pub struct NewPayment {
-    uuid: uuid::Uuid,
+    uuid: Uuid,
     hash: String,
     request: String,
     post_uuid: Uuid,
