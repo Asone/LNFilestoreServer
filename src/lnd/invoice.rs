@@ -1,12 +1,27 @@
+use crate::db::models::Post;
 use chrono::{Duration, NaiveDateTime, Utc};
+use tonic::transport::Channel;
 use tonic::{Code, Status};
+use tonic_lnd::rpc::lightning_client::LightningClient;
 use tonic_lnd::rpc::{Invoice, PaymentHash};
 
-use crate::db::models::Post;
-
-use crate::graphql::context::GQLContext;
-
 use lightning_invoice::*;
+
+pub struct InvoiceParams {
+    pub value: i64,
+    pub memo: String,
+    pub expiry: i64,
+}
+
+impl InvoiceParams {
+    pub fn new(value: Option<i64>, memo: Option<String>, expiry: Option<i64>) -> Self {
+        Self {
+            value: value.unwrap_or_else(|| 10 as i64),
+            memo: memo.unwrap_or_else(|| "".to_string()),
+            expiry: expiry.unwrap_or_else(|| 60 as i64),
+        }
+    }
+}
 
 /*
    Represents a simplified invoice object.
@@ -17,7 +32,7 @@ use lightning_invoice::*;
 pub struct LndInvoice {
     pub memo: String,
     pub payment_request: String,
-    pub value: i32,
+    pub value: i64,
     pub r_hash: String,
     pub expires_at: NaiveDateTime,
 }
@@ -33,7 +48,7 @@ impl LndInvoice {
         Self {
             payment_request: invoice.payment_request,
             memo: invoice.memo,
-            value: invoice.value as i32,
+            value: invoice.value as i64,
             r_hash: r_hash,
             expires_at: expires_at.naive_utc(),
         }
@@ -48,23 +63,39 @@ pub struct InvoiceUtils {}
 
 impl InvoiceUtils {
     /**
-        Generates an invoice.
+        Generates an invoice for a post
         This shall be called whenever the user
         requests a resource without providing a payment request value
         or when the related invoice is expired/canceled.
     */
-    pub async fn generate_invoice<'a>(context: &'a GQLContext, post: Post) -> LndInvoice {
-        let mut client = context.get_lnd_client().clone();
-        let duration: i64 = 60;
+    pub async fn generate_post_invoice(
+        lnd_client: LightningClient<Channel>,
+        post: Post,
+    ) -> LndInvoice {
+        let params = InvoiceParams::new(
+            Some(post.price as i64),
+            // Memo content should be handle with an env var pattern
+            Some(format!("buy {} : {}", post.uuid, post.title).to_string()),
+            Some(60 as i64),
+        );
         // Request invoice generation to the LN Server
-        let add_invoice_response = client.add_invoice(tonic_lnd::rpc::Invoice {
-            memo: format!("buy {} : {}", post.uuid, post.title).to_string(),
-            value: post.price as i64,
-            expiry: duration,
+        InvoiceUtils::generate_invoice(lnd_client, params).await
+    }
+
+    /**
+       Generate an invoice through lnd
+    */
+    pub async fn generate_invoice(
+        mut lnd_client: LightningClient<Channel>,
+        params: InvoiceParams,
+    ) -> LndInvoice {
+        let add_invoice_response = lnd_client.add_invoice(tonic_lnd::rpc::Invoice {
+            memo: params.memo,
+            value: params.value,
+            expiry: params.expiry,
             ..tonic_lnd::rpc::Invoice::default()
         });
 
-        // Fetch the invoice generation response
         let result = add_invoice_response.await.unwrap().into_inner();
 
         // Retrieve the payment hash based on r_hash returned from the AddInvoiceResponse
@@ -73,8 +104,8 @@ impl InvoiceUtils {
             r_hash_str: hex::encode(result.r_hash.clone()), // provided as request by the Struct but not used and deprecated
         };
 
-        // Get the Invoice detail so we can return the payment_request
-        let invoice = client
+        // // Get the Invoice detail so we can return the payment_request
+        let invoice = lnd_client
             .lookup_invoice(payment_hash)
             .await
             .unwrap()
@@ -84,13 +115,16 @@ impl InvoiceUtils {
     }
 
     /*
-        Gets the invoice state from a payment request string
+        Gets the invoice state from a payment request string.
+        It consists as a two steps method.
+
+        First it registers an invoice
     */
     pub async fn get_invoice_state_from_payment_request<'a>(
-        context: &'a GQLContext,
+        lnd_client: &LightningClient<Channel>,
         payment_request: String,
     ) -> Result<Option<Invoice>, Status> {
-        let mut client = context.get_lnd_client().clone();
+        let mut client = lnd_client.clone();
 
         // Parse the payment request
         let invoice = payment_request
