@@ -1,4 +1,14 @@
 table! {
+    api_payment (uuid) {
+        uuid -> Uuid,
+        request -> Text,
+        state -> Nullable<Text>,
+        hash -> Text,
+        expires_at -> Timestamptz,
+    }
+}
+
+table! {
     payment (uuid) {
         uuid -> Uuid,
         request -> Text,
@@ -23,4 +33,4 @@ table! {
 
 joinable!(payment -> post (post_uuid));
 
-allow_tables_to_appear_in_same_query!(payment, post,);
+allow_tables_to_appear_in_same_query!(api_payment, payment, post,);
