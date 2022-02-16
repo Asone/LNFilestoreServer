@@ -1,8 +1,8 @@
 use crate::{db::PostgresConn, lnd::client::LndClient};
 
 use derive_more::Deref;
-use tonic::transport::Channel;
-use tonic_lnd::rpc::lightning_client::LightningClient;
+use tonic::{transport::Channel, codegen::InterceptedService};
+use tonic_lnd::{rpc::lightning_client::LightningClient, MacaroonInterceptor};
 
 /*
    The GQLPayableContext struct provides an extended juniper context
@@ -31,7 +31,7 @@ impl AsRef<Self> for GQLPayableContext {
 
 impl GQLPayableContext {
     // Provides the instance of the LN Client
-    pub fn get_lnd_client(&self) -> &LightningClient<Channel> {
+    pub fn get_lnd_client(&self) -> &LightningClient<InterceptedService<tonic::transport::Channel, MacaroonInterceptor>> {
         return &self.lnd.0;
     }
 

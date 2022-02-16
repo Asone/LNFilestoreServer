@@ -1,7 +1,9 @@
 use crate::db::models::Post;
 use chrono::{Duration, NaiveDateTime, Utc};
+use tonic::codegen::InterceptedService;
 use tonic::transport::Channel;
 use tonic::{Code, Status};
+use tonic_lnd::MacaroonInterceptor;
 use tonic_lnd::rpc::lightning_client::LightningClient;
 use tonic_lnd::rpc::{Invoice, PaymentHash};
 
@@ -69,7 +71,7 @@ impl InvoiceUtils {
         or when the related invoice is expired/canceled.
     */
     pub async fn generate_post_invoice(
-        lnd_client: LightningClient<Channel>,
+        lnd_client: LightningClient<InterceptedService<tonic::transport::Channel, MacaroonInterceptor>>,
         post: Post,
     ) -> LndInvoice {
         let params = InvoiceParams::new(
@@ -86,7 +88,7 @@ impl InvoiceUtils {
        Generate an invoice through lnd
     */
     pub async fn generate_invoice(
-        mut lnd_client: LightningClient<Channel>,
+        mut lnd_client: LightningClient<InterceptedService<tonic::transport::Channel, MacaroonInterceptor>>,
         params: InvoiceParams,
     ) -> LndInvoice {
         let add_invoice_response = lnd_client.add_invoice(tonic_lnd::rpc::Invoice {
@@ -121,7 +123,7 @@ impl InvoiceUtils {
         First it registers an invoice
     */
     pub async fn get_invoice_state_from_payment_request<'a>(
-        lnd_client: &LightningClient<Channel>,
+        lnd_client: &LightningClient<InterceptedService<tonic::transport::Channel, MacaroonInterceptor>>,
         payment_request: String,
     ) -> Result<Option<Invoice>, Status> {
         let mut client = lnd_client.clone();
