@@ -5,7 +5,9 @@ use rocket::{
     request::{FromRequest, Outcome},
     Request,
 };
+use tonic_lnd::rpc::invoice::InvoiceState;
 
+use super::invoice::InvoiceUtils;
 extern crate dotenv;
 
 pub struct LndClient(pub tonic_lnd::Client);
@@ -43,6 +45,23 @@ impl<'r> FromRequest<'r> for LndClient {
         match client {
             Ok(result) => Outcome::Success(LndClient(result)),
             Err(_e) => Outcome::Failure((Status::ServiceUnavailable, ())),
+        }
+    }
+}
+
+impl LndClient {
+    pub async fn get_invoice_status(
+        self,
+        payment_hash: String,
+    ) -> Result<InvoiceState, &'static str> {
+        match InvoiceUtils::get_invoice_state_from_payment_request(&self.0, payment_hash).await {
+            Ok(invoice_result) => match invoice_result {
+                Some(invoice) => Ok(invoice.state()),
+                None => Err("No invoice found"),
+            },
+            // LND Server says there's no invoice matching
+            // Invoice is broken. Maybe we should serve a new invoice here ?
+            Err(_) => Err("Error fetching invoice"),
         }
     }
 }

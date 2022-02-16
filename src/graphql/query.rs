@@ -40,7 +40,9 @@ impl Query {
 
         match db_result {
             Some(post) => {
-                let invoice = InvoiceUtils::generate_invoice(context, post).await;
+                let invoice =
+                    InvoiceUtils::generate_post_invoice(context.get_lnd_client().clone(), post)
+                        .await;
                 let payment = connection
                     .run(move |c| Payment::create(NewPayment::from((invoice, post_id)), c))
                     .await;
@@ -96,17 +98,17 @@ impl Query {
                                 Some(payment) => { // Payment found
 
                                     // Request LND invoice and checks the invoice state
-                                    match InvoiceUtils::get_invoice_state_from_payment_request(context, payment.request).await {
-                                        Ok(invoice_result) => match invoice_result {
-                                            Some(invoice) => match invoice.state() {
-                                                InvoiceState::Settled => Ok(PostType::from(r)), // Payment has been done. Serves the post
-                                                InvoiceState::Open => Err(FieldError::new(
-                                                    "Awaiting for payment to be done.",
-                                                    graphql_value!({"state": "open"}),
-                                                )), // Payment hasn't been done yet. We shall wait for payment, so there's no need to regenerate an invoice
-                                                InvoiceState::Accepted => Err(FieldError::new(
-                                                    "Payment ongoing but not settled yet",
-                                                    graphql_value!({"state": "ongoing"}),
+                                    match InvoiceUtils::get_invoice_state_from_payment_request(context.get_lnd_client(), payment.request).await {
+                                            Ok(invoice_result) => match invoice_result {
+                                                Some(invoice) => match invoice.state() {
+                                                    InvoiceState::Settled => Ok(PostType::from(r)), // Payment has been done. Serves the post
+                                                    InvoiceState::Open => Err(FieldError::new(
+                                                        "Awaiting for payment to be done.",
+                                                        graphql_value!({"state": "open"}),
+                                                    )), // Payment hasn't been done yet. We shall wait for payment, so there's no need to regenerate an invoice
+                                                    InvoiceState::Accepted => Err(FieldError::new(
+                                                        "Payment ongoing but not settled yet",
+                                                        graphql_value!({"state": "ongoing"}),
                                                 )), // Payment is on process onto the network but has not reach its receiver yet. We shall wait, so there's no need to regenerate an invoice
                                                 InvoiceState::Canceled => Err(QueryUtils::generate_invoiced_error(context,post_id,r,"Payment expired or canceled.").await),
                                             },
@@ -119,7 +121,7 @@ impl Query {
                                             "An error happened when trying to decode invoice",
                                             Value::null(),
                                         )),
-                                        }
+                                    }
                                 },
                                 // Our DB does not contain any payment with the provided payment_request.
                                 None => Err(QueryUtils::generate_invoiced_error(context,post_id,r,"No recorded payment request related to the requested post found with the payment requested provided.").await)                            
@@ -153,7 +155,8 @@ impl QueryUtils {
         message: &str,
     ) -> FieldError {
         let connection = context.get_db_connection();
-        let invoice = InvoiceUtils::generate_invoice(context, post).await;
+        let invoice =
+            InvoiceUtils::generate_post_invoice(context.get_lnd_client().clone(), post).await;
         let payment = connection
             .run(move |c| Payment::create(NewPayment::from((invoice, post_id)), c))
             .await;

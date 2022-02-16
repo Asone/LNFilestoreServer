@@ -1,4 +1,4 @@
-use crate::db::models::payment::{self, Payment};
+use crate::db::models::payment::Payment;
 use chrono::NaiveDateTime;
 
 #[derive(GraphQLObject)]
