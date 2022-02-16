@@ -19,7 +19,7 @@ jobs:
     - name: Install 1.57 nightly
       uses: actions-rs/toolchain@v1
       with:
-          toolchain: nightly-1.57
+          toolchain: 1.57
           override: true
           components: rustc
     - name: Build
