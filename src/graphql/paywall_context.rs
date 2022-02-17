@@ -5,7 +5,7 @@ use tonic::{transport::Channel, codegen::InterceptedService};
 use tonic_lnd::{rpc::lightning_client::LightningClient, MacaroonInterceptor};
 
 /*
-   The GQLContext struct provides an extended juniper context
+   The GQLPayableContext struct provides an extended juniper context
    with references to instances for both the database and the
    lightning network client.
    This allow us :
@@ -13,22 +13,23 @@ use tonic_lnd::{rpc::lightning_client::LightningClient, MacaroonInterceptor};
     - To interact with the lightning network server
 */
 #[derive(Deref)]
-pub struct GQLContext {
+pub struct GQLPayableContext {
     #[deref]
     pub pool: PostgresConn,
     pub lnd: LndClient,
+    pub payment_request: String,
 }
 
-impl juniper::Context for GQLContext {}
+impl juniper::Context for GQLPayableContext {}
 
-impl AsRef<Self> for GQLContext {
+impl AsRef<Self> for GQLPayableContext {
     #[inline]
     fn as_ref(&self) -> &Self {
         self
     }
 }
 
-impl GQLContext {
+impl GQLPayableContext {
     // Provides the instance of the LN Client
     pub fn get_lnd_client(&self) -> &LightningClient<InterceptedService<tonic::transport::Channel, MacaroonInterceptor>> {
         return &self.lnd.0;
@@ -37,5 +38,9 @@ impl GQLContext {
     // Provides the instance of DB pool
     pub fn get_db_connection(&self) -> &PostgresConn {
         return &self.pool;
+    }
+
+    pub fn get_payment_request(&self) -> &String {
+        return &self.payment_request;
     }
 }
