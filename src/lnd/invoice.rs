@@ -3,9 +3,9 @@ use chrono::{Duration, NaiveDateTime, Utc};
 use tonic::codegen::InterceptedService;
 use tonic::transport::Channel;
 use tonic::{Code, Status};
-use tonic_lnd::MacaroonInterceptor;
 use tonic_lnd::rpc::lightning_client::LightningClient;
 use tonic_lnd::rpc::{Invoice, PaymentHash};
+use tonic_lnd::MacaroonInterceptor;
 
 use lightning_invoice::*;
 
@@ -18,9 +18,9 @@ pub struct InvoiceParams {
 impl InvoiceParams {
     pub fn new(value: Option<i64>, memo: Option<String>, expiry: Option<i64>) -> Self {
         Self {
-            value: value.unwrap_or_else(|| 10 as i64),
+            value: value.unwrap_or_else(|| 42 as i64),
             memo: memo.unwrap_or_else(|| "".to_string()),
-            expiry: expiry.unwrap_or_else(|| 60 as i64),
+            expiry: expiry.unwrap_or_else(|| 300 as i64),
         }
     }
 }
@@ -71,7 +71,9 @@ impl InvoiceUtils {
         or when the related invoice is expired/canceled.
     */
     pub async fn generate_post_invoice(
-        lnd_client: LightningClient<InterceptedService<tonic::transport::Channel, MacaroonInterceptor>>,
+        lnd_client: LightningClient<
+            InterceptedService<tonic::transport::Channel, MacaroonInterceptor>,
+        >,
         post: Post,
     ) -> LndInvoice {
         let params = InvoiceParams::new(
@@ -88,7 +90,9 @@ impl InvoiceUtils {
        Generate an invoice through lnd
     */
     pub async fn generate_invoice(
-        mut lnd_client: LightningClient<InterceptedService<tonic::transport::Channel, MacaroonInterceptor>>,
+        mut lnd_client: LightningClient<
+            InterceptedService<tonic::transport::Channel, MacaroonInterceptor>,
+        >,
         params: InvoiceParams,
     ) -> LndInvoice {
         let add_invoice_response = lnd_client.add_invoice(tonic_lnd::rpc::Invoice {
@@ -123,7 +127,9 @@ impl InvoiceUtils {
         First it registers an invoice
     */
     pub async fn get_invoice_state_from_payment_request<'a>(
-        lnd_client: &LightningClient<InterceptedService<tonic::transport::Channel, MacaroonInterceptor>>,
+        lnd_client: &LightningClient<
+            InterceptedService<tonic::transport::Channel, MacaroonInterceptor>,
+        >,
         payment_request: String,
     ) -> Result<Option<Invoice>, Status> {
         let mut client = lnd_client.clone();

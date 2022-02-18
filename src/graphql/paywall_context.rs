@@ -1,7 +1,7 @@
 use crate::{db::PostgresConn, lnd::client::LndClient};
 
 use derive_more::Deref;
-use tonic::{transport::Channel, codegen::InterceptedService};
+use tonic::{codegen::InterceptedService, transport::Channel};
 use tonic_lnd::{rpc::lightning_client::LightningClient, MacaroonInterceptor};
 
 /*
@@ -31,7 +31,9 @@ impl AsRef<Self> for GQLPayableContext {
 
 impl GQLPayableContext {
     // Provides the instance of the LN Client
-    pub fn get_lnd_client(&self) -> &LightningClient<InterceptedService<tonic::transport::Channel, MacaroonInterceptor>> {
+    pub fn get_lnd_client(
+        &self,
+    ) -> &LightningClient<InterceptedService<tonic::transport::Channel, MacaroonInterceptor>> {
         return &self.lnd.0;
     }
 

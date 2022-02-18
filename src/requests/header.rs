@@ -46,15 +46,12 @@ impl<'r> FromRequest<'r> for PaymentRequestHeader {
                         let lnd_client_result = request.guard::<LndClient>().await.succeeded();
                         match lnd_client_result {
                             Some(lnd_client) => {
-                                let api_payment_result =
-                                    request_new_api_payment(lnd_client, conn).await;
-                                match api_payment_result {
-                                    Ok(api_payment) => {
-                                        request.local_cache(|| api_payment);
-                                        Outcome::Failure((Status::PaymentRequired, None))
-                                    }
-                                    Err(_) => Outcome::Failure((Status::InternalServerError, None)),
-                                }
+                                request
+                                    .local_cache_async(async {
+                                        request_new_api_payment(lnd_client, conn).await
+                                    })
+                                    .await;
+                                Outcome::Failure((Status::PaymentRequired, None))
                             }
                             None => Outcome::Failure((Status::InternalServerError, None)),
                         }

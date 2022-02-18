@@ -22,23 +22,21 @@ pub async fn payment_required<'r>(
         Some(db) => {
             match lnd_client_result {
                 Some(lnd_client) => {
-                    let api_payment = ApiPayment::create_from_client(lnd_client, db, None).await;
-                    match api_payment {
-                        Ok(api_payment_result) => {
-                            //    see https://api.rocket.rs/v0.5-rc/rocket/request/macro.local_cache.html
-
-                            let payment_request = request.local_cache(|| api_payment_result);
-                            let json_state = format!(
-                                r#"{{\"payment\": \"{:?}\"}}"#,
-                                payment_request.request.as_str()
-                            );
-
-                            // todo: use serde json and handle response with structs
-
+                    //    see https://api.rocket.rs/v0.5-rc/rocket/request/macro.local_cache.html
+                    let payment_request_result = request
+                        .local_cache_async(async {
+                            ApiPayment::create_from_client(lnd_client, db, None).await
+                        })
+                        .await;
+                    match (payment_request_result) {
+                        Ok(payment_request) => {
+                            let json_state =
+                                format!(r#"{{"payment": {:?}}}"#, payment_request.request.as_str());
                             Ok(status::Custom(Status::PaymentRequired, Json(json_state)))
                         }
                         Err(_) => Err(Status::InternalServerError),
                     }
+                    // todo: use serde json and handle response with structs
                 }
                 None => Err(Status::InternalServerError),
             }
