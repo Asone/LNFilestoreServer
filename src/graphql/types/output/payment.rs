@@ -4,7 +4,9 @@ use chrono::NaiveDateTime;
 #[derive(GraphQLObject)]
 #[graphql(description = "A payment request object")]
 pub struct PaymentType {
+    #[graphql(description = "The paywall ln invoice payment request string")]
     payment_request: String,
+    #[graphql(description = "The expiry time of current invoice")]
     expires_at: NaiveDateTime,
 }
 
