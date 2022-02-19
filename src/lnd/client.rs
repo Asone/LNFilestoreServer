@@ -1,4 +1,4 @@
-use std::env::{self};
+use std::env;
 
 use rocket::{
     http::Status,

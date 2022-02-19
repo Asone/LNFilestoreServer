@@ -6,8 +6,10 @@ use tonic::{Code, Status};
 use tonic_lnd::rpc::lightning_client::LightningClient;
 use tonic_lnd::rpc::{Invoice, PaymentHash};
 use tonic_lnd::MacaroonInterceptor;
+use std::env;
 
 use lightning_invoice::*;
+extern crate dotenv;
 
 pub struct InvoiceParams {
     pub value: i64,
@@ -17,10 +19,15 @@ pub struct InvoiceParams {
 
 impl InvoiceParams {
     pub fn new(value: Option<i64>, memo: Option<String>, expiry: Option<i64>) -> Self {
+        
+        let default_value = env::var("DEFAULT_INVOICE_VALUE").unwrap_or("100".to_string());
+        let default_expiry = env::var("DEFAULT_INVOICE_EXPIRY").unwrap_or("API Payment".to_string());
+        let default_memo = env::var("DEFAULT_INVOICE_MEMO").unwrap_or("600".to_string());
+
         Self {
-            value: value.unwrap_or_else(|| 42 as i64),
-            memo: memo.unwrap_or_else(|| "".to_string()),
-            expiry: expiry.unwrap_or_else(|| 300 as i64),
+            value: value.unwrap_or_else(|| default_value.parse::<i64>().unwrap()),
+            memo: memo.unwrap_or_else(|| default_memo),
+            expiry: expiry.unwrap_or_else(|| default_expiry.parse::<i64>().unwrap()),
         }
     }
 }
