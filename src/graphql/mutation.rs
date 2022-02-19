@@ -11,6 +11,7 @@ pub struct Mutation;
 
 #[juniper::graphql_object(context = GQLContext)]
 impl Mutation {
+    #[graphql(description = "Create a post")]
     async fn create_post<'a>(
         context: &'a GQLContext,
         post: CreatePostInput,

@@ -19,6 +19,7 @@ impl Query {
        We use a specific post type here to limit the accessible information of posts through
        the request
     */
+    #[graphql(description = "Retrieves the list of posts")]
     async fn get_posts_list(context: &'a GQLContext) -> Result<Vec<PreviewPostType>, FieldError> {
         let connection = context.get_db_connection();
         let db_results = connection.run(move |c| Post::find_all_published(c)).await;
@@ -29,6 +30,7 @@ impl Query {
             .collect::<Vec<PreviewPostType>>())
     }
 
+    #[graphql(description = "Requests a ln query paywall invoice for a given post")]
     async fn requestInvoiceForPost(
         context: &'a GQLContext,
         post_id: uuid::Uuid,
@@ -66,6 +68,7 @@ impl Query {
        Gets a post.
        This is the main request where paywall shall be applied.
     */
+    #[graphql(description = "Gets a specific post. The query is protected through a paywall")]
     async fn get_post<'a, 'b>(
         context: &'a GQLContext,
         post: PayablePostInput,
