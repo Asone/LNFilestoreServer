@@ -11,7 +11,7 @@ extern crate diesel;
 extern crate diesel_derive_enum;
 extern crate dotenv;
 extern crate tonic;
-
+extern crate tokio_util;
 mod app;
 mod catchers;
 mod cors;
@@ -33,7 +33,7 @@ use crate::{
 
 use crate::app::{
     get_graphql_handler, graphiql, options_handler, payable_post_graphql_handler,
-    post_graphql_handler,
+    post_graphql_handler, upload
 };
 use crate::db::PostgresConn;
 
@@ -64,7 +64,8 @@ async fn main() {
                 graphiql,
                 get_graphql_handler,
                 post_graphql_handler,
-                payable_post_graphql_handler
+                payable_post_graphql_handler,
+                upload
             ],
         )
         .attach(Cors)

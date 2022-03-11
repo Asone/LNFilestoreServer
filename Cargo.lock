@@ -849,10 +849,13 @@ dependencies = [
  "juniper_rocket",
  "lazy_static",
  "lightning-invoice",
+ "multer",
  "rocket",
+ "rocket-multipart-form-data",
  "rocket_sync_db_pools",
  "serde",
  "serde_json",
+ "tokio-util",
  "tonic",
  "tonic_lnd",
  "uuid",
@@ -952,9 +955,9 @@ dependencies = [
 
 [[package]]
 name = "multer"
-version = "2.0.1"
+version = "2.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "408327e2999b839cd1af003fc01b2019a6c10a1361769542203f6fedc5179680"
+checksum = "5f8f35e687561d5c1667590911e6698a8cb714a134a7505718a182e7bc9d3836"
 dependencies = [
  "bytes",
  "encoding_rs",
@@ -962,11 +965,11 @@ dependencies = [
  "http",
  "httparse",
  "log",
+ "memchr",
  "mime",
  "spin 0.9.2",
  "tokio",
  "tokio-util",
- "twoway",
  "version_check",
 ]
 
@@ -1462,6 +1465,18 @@ dependencies = [
  "ubyte",
  "version_check",
  "yansi",
+]
+
+[[package]]
+name = "rocket-multipart-form-data"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2bec4978d352a6bd60b23b9e518096082f194abfbb03d0fdc189b5440dbb2798"
+dependencies = [
+ "mime",
+ "multer",
+ "rocket",
+ "tokio-util",
 ]
 
 [[package]]
@@ -2173,16 +2188,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "59547bce71d9c38b83d9c0e92b6066c4253371f15005def0c30d9657f50c7642"
 
 [[package]]
-name = "twoway"
-version = "0.2.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c57ffb460d7c24cd6eda43694110189030a3d1dfe418416d9468fd1c1d290b47"
-dependencies = [
- "memchr",
- "unchecked-index",
-]
-
-[[package]]
 name = "ubyte"
 version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2206,12 +2211,6 @@ dependencies = [
  "serde",
  "version_check",
 ]
-
-[[package]]
-name = "unchecked-index"
-version = "0.2.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eeba86d422ce181a719445e51872fa30f1f7413b62becb52e95ec91aa262d85c"
 
 [[package]]
 name = "unicode-bidi"
