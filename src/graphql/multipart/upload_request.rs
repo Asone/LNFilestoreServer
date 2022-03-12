@@ -253,8 +253,6 @@ where
 
 const BODY_LIMIT: u64 = 1024 * 100;
 
-
-
 #[rocket::async_trait]
 impl<'r, S> FromData<'r> for GraphQLUploadRequest<S>
 where
@@ -315,11 +313,16 @@ where
                         let mut multipart = Multipart::new(stream, boundary);
 
 
-                        while let Some(mut entry) = multipart.next_field().await.unwrap() {
-                                    let field_name = match entry.name() {
-                                        Some(name) => Arc::<&str>::from(name),
-                                        None => continue,
-                                    };
+                        'outer: while let Some(mut entry) = multipart.next_field().await.unwrap() {
+                                let field_name = match entry.name() {
+                                    Some(name) => {
+                                    let m = Arc::<&str>::from(name);
+                                    m
+                                    },
+                                    None => continue,
+                                };
+
+                                if(field_name = "operations") {}
                         }
 
                         GraphQLBatchRequest::Single(http::GraphQLRequest::new("{{}}".to_string(), None, None))
