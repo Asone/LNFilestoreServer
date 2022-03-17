@@ -38,9 +38,9 @@ Check the LICENSE file for details.
 
 #![doc(html_root_url = "https://docs.rs/juniper_rocket/0.7.1")]
 
-use std::{borrow::Cow, io::Cursor, sync::Arc};
+use std::{borrow::Cow, io::Cursor, sync::Arc, collections::HashMap};
 
-use juniper_rocket::GraphQLResponse;
+use juniper_rocket::{GraphQLResponse, GraphQLContext};
 use multer::Multipart;
 use rocket::{
     data::{self, FromData, ToByteUnit},
@@ -59,7 +59,7 @@ use juniper::{
 
 enum FormType{
     IS_JSON,
-    NOT_JSON,
+    GRAPHQL,
     MULTIPART
 }
 
@@ -69,7 +69,7 @@ enum FormType{
 /// automatically from both GET and POST routes by implementing the `FromForm`
 /// and `FromData` traits.
 #[derive(Debug, PartialEq)]
-pub struct GraphQLUploadRequest<S = DefaultScalarValue>(GraphQLBatchRequest<S>)
+pub struct GraphQLUploadRequest<S = DefaultScalarValue>(GraphQLBatchRequest<S>,Option<Vec<u8>>)
 where
     S: ScalarValue;
 
@@ -138,119 +138,6 @@ where
     }
 }
 
-pub struct GraphQLContext<'f, S: ScalarValue> {
-    opts: Options,
-    query: Option<String>,
-    operation_name: Option<String>,
-    variables: Option<InputValue<S>>,
-    errors: Errors<'f>,
-}
-
-impl<'f, S: ScalarValue> GraphQLContext<'f, S> {
-    fn query(&mut self, value: String) {
-        if self.query.is_some() {
-            let error = Error::from(ErrorKind::Duplicate).with_name("query");
-
-            self.errors.push(error)
-        } else {
-            self.query = Some(value);
-        }
-    }
-
-    fn operation_name(&mut self, value: String) {
-        if self.operation_name.is_some() {
-            let error = Error::from(ErrorKind::Duplicate).with_name("operation_name");
-
-            self.errors.push(error)
-        } else {
-            self.operation_name = Some(value);
-        }
-    }
-
-    fn variables(&mut self, value: String) {
-        if self.variables.is_some() {
-            let error = Error::from(ErrorKind::Duplicate).with_name("variables");
-
-            self.errors.push(error)
-        } else {
-            let parse_result = serde_json::from_str::<InputValue<S>>(&value);
-
-            match parse_result {
-                Ok(variables) => self.variables = Some(variables),
-                Err(e) => {
-                    let error = Error::from(ErrorKind::Validation(Cow::Owned(e.to_string())))
-                        .with_name("variables");
-
-                    self.errors.push(error);
-                }
-            }
-        }
-    }
-}
-
-#[rocket::async_trait]
-impl<'f, S> FromForm<'f> for GraphQLUploadRequest<S>
-where
-    S: ScalarValue + Send,
-{
-    type Context = GraphQLContext<'f, S>;
-
-    fn init(opts: Options) -> Self::Context {
-        GraphQLContext {
-            opts,
-            query: None,
-            operation_name: None,
-            variables: None,
-            errors: Errors::new(),
-        }
-    }
-
-    fn push_value(ctx: &mut Self::Context, field: ValueField<'f>) {
-        match field.name.key().map(|key| key.as_str()) {
-            Some("query") => ctx.query(field.value.to_owned()),
-            Some("operation_name") => ctx.operation_name(field.value.to_owned()),
-            Some("variables") => ctx.variables(field.value.to_owned()),
-            Some(key) => {
-                if ctx.opts.strict {
-                    let error = Error::from(ErrorKind::Unknown).with_name(key);
-
-                    ctx.errors.push(error)
-                }
-            }
-            None => {
-                if ctx.opts.strict {
-                    let error = Error::from(ErrorKind::Unexpected);
-
-                    ctx.errors.push(error)
-                }
-            }
-        }
-    }
-
-    async fn push_data(ctx: &mut Self::Context, field: DataField<'f, '_>) {
-        if ctx.opts.strict {
-            let error = Error::from(ErrorKind::Unexpected).with_name(field.name);
-
-            ctx.errors.push(error)
-        }
-    }
-
-    fn finalize(mut ctx: Self::Context) -> rocket::form::Result<'f, Self> {
-        if ctx.query.is_none() {
-            let error = Error::from(ErrorKind::Missing).with_name("query");
-
-            ctx.errors.push(error)
-        }
-
-        match ctx.errors.is_empty() {
-            true => Ok(GraphQLUploadRequest(GraphQLBatchRequest::Single(
-                http::GraphQLRequest::new(ctx.query.unwrap(), ctx.operation_name, ctx.variables),
-            ))),
-            false => Err(ctx.errors),
-        }
-    }
-}
-
 const BODY_LIMIT: u64 = 1024 * 100;
 
 #[rocket::async_trait]
@@ -264,29 +151,28 @@ where
         req: &'r Request<'_>,
         data: Data<'r>,
     ) -> data::Outcome<'r, Self, Self::Error> {
-        use rocket::tokio::io::AsyncReadExt as _;
 
+        // Get content-type of HTTP request
         let content_type = req.content_type().unwrap();
-        // let content_type_value = content_type
-        //     .map(|ct| (ct.top().as_str(), ct.sub().as_str()));
         
+        // Split content-type value as a tuple of str
         let content_type_value = (content_type.top().as_str(),content_type.sub().as_str());
+        
+        // Identify the value to aknowledge which kind of parsing action we
+        // need to provide
         let content_type_enum_value = match content_type_value {
             ("application", "json") => FormType::IS_JSON,
-            ("application", "graphql") => FormType::NOT_JSON,
+            ("application", "graphql") => FormType::GRAPHQL,
             ("multipart","form-data") => FormType::MULTIPART,
             _ => return Box::pin(async move { Forward(data) }).await,
         };
         
-
-
-
         Box::pin(async move {
    
             Success(GraphQLUploadRequest({
 
                 match content_type_enum_value {
-                    FormType::IS_JSON => {
+                    FormType::IS_JSON => { // Content-type is declared as json
                         let mut body = String::new();
                         let mut reader = data.open(BODY_LIMIT.bytes());
             
@@ -295,41 +181,70 @@ where
                             Err(e) => return Failure((Status::BadRequest, format!("{}", e))),
                         }
                     },
-                    FormType::NOT_JSON => {
+                    FormType::GRAPHQL => { // Content-type is declared as graphQL 
                         let mut body = String::new();
                         let mut reader = data.open(BODY_LIMIT.bytes());
             
                         GraphQLBatchRequest::Single(http::GraphQLRequest::new(body, None, None))
                     },
-                    FormType::MULTIPART => {
+                    FormType::MULTIPART => { // Content-type is declared as a multipart request
+                        let mut query: String = "".to_string();
+                        // Get the boundary attached to the multipart form
                         let (_, boundary) = match content_type.params().find(|&(k, _)| k == "boundary") {
                             Some(s) => s,
                             None => return Failure((Status::InternalServerError, format!("An error happened"))),
                         };
                         
+                        // Reads the datastream of request and converts it to a multipart object
                         let mut body = String::new();
                         let mut reader = data.open(BODY_LIMIT.bytes());
                         let stream = tokio_util::io::ReaderStream::new(reader);
                         let mut multipart = Multipart::new(stream, boundary);
 
-
-                        'outer: while let Some(mut entry) = multipart.next_field().await.unwrap() {
+                        // Iterate through the different fields of the data-form
+                        while let Some(entry) = multipart.next_field().await.unwrap() {
                                 let field_name = match entry.name() {
                                     Some(name) => {
+                                    println!("{}",name);
                                     let m = Arc::<&str>::from(name);
                                     m
                                     },
                                     None => continue,
                                 };
 
-                                if(field_name = "operations") {}
+                                let name = field_name.to_string();
+                                // Check if there is some mimetype which should exist when a field is a binary file
+                                if let Some(content_type) = entry.content_type().as_ref() {
+                                    let top = content_type.type_();
+                                    let sub = content_type.subtype();
+
+                                    let content = entry.bytes().await;
+                                } else { // No mimetype so we expect this to not be a file but rather a json content
+                                    let r = entry.text().await;
+
+                                    match r {
+                                        Ok(result) => {
+                                            // println!("{}",field_name);
+                                            if name.as_str() == "operations" {
+                                               query = result;
+                                            }
+                                        },
+                                        Err(_) => {}
+                                    }
+                                    // println!("field : {}, with no MimeType",field_name);
+                                }
                         }
 
-                        GraphQLBatchRequest::Single(http::GraphQLRequest::new("{{}}".to_string(), None, None))
+                        match serde_json::from_str(&query) {
+                            Ok(req) => req,
+                            Err(e) => return Failure((Status::BadRequest, format!("{}", e))),
+                        }
+
+                        // GraphQLBatchRequest::Single(http::GraphQLRequest::new(query, None, None))
                     }
                 }
             
-            }))
+            },None))
         })
         .await
       
