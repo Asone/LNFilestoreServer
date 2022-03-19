@@ -101,7 +101,7 @@ pub async fn payable_post_graphql_handler(
 
 #[rocket::post("/upload", data = "<request>")]
 pub async fn upload<'r>(
-    request: crate::graphql::multipart::upload_request::GraphQLUploadDraftedRequest,
+    request: crate::graphql::multipart::upload_request::GraphQLUploadRequest,
     schema: &State<Schema>,
     db: PostgresConn,
     lnd: LndClient,

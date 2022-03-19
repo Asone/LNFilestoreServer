@@ -40,7 +40,7 @@ enum ProcessorType {
 const BODY_LIMIT: u64 = 1024 * 100;
 
 #[derive(Debug, PartialEq, Deserialize)]
-pub struct GraphQLUploadDraftedRequest<S = DefaultScalarValue>
+pub struct GraphQLUploadRequest<S = DefaultScalarValue>
 where
     S: ScalarValue,
 {
@@ -48,7 +48,7 @@ where
     pub files: Option<Vec<String>>,
 }
 
-impl<S> GraphQLUploadDraftedRequest<S>
+impl<S> GraphQLUploadRequest<S>
 where
     S: ScalarValue,
 {
@@ -201,7 +201,7 @@ where
 }
 
 #[rocket::async_trait]
-impl<'r, S> FromData<'r> for GraphQLUploadDraftedRequest<S>
+impl<'r, S> FromData<'r> for GraphQLUploadRequest<S>
 where
     S: ScalarValue,
 {
@@ -220,7 +220,7 @@ where
             ProcessorType::JSON => {
                 Box::pin(async move {
                     match Self::from_json_body(data) {
-                        Ok(result) => Success(GraphQLUploadDraftedRequest {
+                        Ok(result) => Success(GraphQLUploadRequest {
                             gql_request: result.0,
                             files: result.1,
                         }),
@@ -233,7 +233,7 @@ where
             ProcessorType::GRAPHQL => {
                 Box::pin(async move {
                     match Self::from_graphql_body(data) {
-                        Ok(result) => Success(GraphQLUploadDraftedRequest {
+                        Ok(result) => Success(GraphQLUploadRequest {
                             gql_request: result,
                             files: None,
                         }),
@@ -245,7 +245,7 @@ where
             ProcessorType::MULTIPART => {
                 Box::pin(async move {
                     match Self::from_multipart_body(data, content_type).await {
-                        Ok(result) => Success(GraphQLUploadDraftedRequest {
+                        Ok(result) => Success(GraphQLUploadRequest {
                             gql_request: result.0,
                             files: result.1
                         }),
