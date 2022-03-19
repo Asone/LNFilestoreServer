@@ -17,6 +17,7 @@ pub struct GQLContext {
     #[deref]
     pub pool: PostgresConn,
     pub lnd: LndClient,
+    pub files: Option<Vec<String>>,
 }
 
 impl juniper::Context for GQLContext {}

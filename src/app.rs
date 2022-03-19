@@ -4,16 +4,19 @@ use crate::{
     graphql::{context::GQLContext, mutation::Mutation, query::Query},
     lnd::client::LndClient,
 };
-use lightning_invoice::Sha256;
-use rocket::{response::content, State, Data, data::ToByteUnit, form::Form, fs::TempFile, http::ContentType};
-use rocket_multipart_form_data::{MultipartFormDataOptions, MultipartFormData, MultipartFormDataField, FileField};
+use rocket::{
+    data::ToByteUnit, form::Form, fs::TempFile, http::ContentType, response::content, Data, State,
+};
+use rocket_multipart_form_data::{
+    FileField, MultipartFormData, MultipartFormDataField, MultipartFormDataOptions,
+};
 pub type Schema = RootNode<'static, Query, Mutation, EmptySubscription<GQLContext>>;
 
 use crate::db::PostgresConn;
 use crate::requests::header::PaymentRequestHeader;
 use juniper::{EmptySubscription, RootNode};
 use juniper_rocket::GraphQLResponse;
-use serde_json::{Value};
+use serde_json::Value;
 
 #[rocket::get("/")]
 pub fn graphiql() -> content::Html<String> {
@@ -40,7 +43,14 @@ pub async fn get_graphql_handler(
     lnd: LndClient,
 ) -> GraphQLResponse {
     request
-        .execute(&*schema, &GQLContext { pool: db, lnd: lnd })
+        .execute(
+            &*schema,
+            &GQLContext {
+                pool: db,
+                lnd: lnd,
+                files: None,
+            },
+        )
         .await
 }
 
@@ -55,7 +65,14 @@ pub async fn post_graphql_handler(
     lnd: LndClient,
 ) -> GraphQLResponse {
     request
-        .execute(&*schema, &GQLContext { pool: db, lnd: lnd })
+        .execute(
+            &*schema,
+            &GQLContext {
+                pool: db,
+                lnd: lnd,
+                files: None,
+            },
+        )
         .await
 }
 
@@ -71,17 +88,34 @@ pub async fn payable_post_graphql_handler(
     _payment_request: PaymentRequestHeader,
 ) -> GraphQLResponse {
     request
-        .execute(&*schema, &GQLContext { pool: db, lnd: lnd })
+        .execute(
+            &*schema,
+            &GQLContext {
+                pool: db,
+                lnd: lnd,
+                files: None,
+            },
+        )
         .await
 }
+
 #[rocket::post("/upload", data = "<request>")]
 pub async fn upload<'r>(
-    request: crate::graphql::multipart::upload_request::GraphQLUploadRequest,
+    request: crate::graphql::multipart::upload_request::GraphQLUploadDraftedRequest,
     schema: &State<Schema>,
     db: PostgresConn,
-    lnd: LndClient) -> GraphQLResponse {
-    
+    lnd: LndClient,
+) -> GraphQLResponse {
+    let files = request.files.clone();
 
-    request.execute(&*schema, &GQLContext { pool: db, lnd: lnd })
+    request
+        .execute(
+            &*schema,
+            &GQLContext {
+                pool: db,
+                lnd: lnd,
+                files: files,
+            },
+        )
         .await
 }
