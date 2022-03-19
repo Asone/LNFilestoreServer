@@ -87,7 +87,7 @@ impl InvoiceUtils {
             Some(post.price as i64),
             // Memo content should be handle with an env var pattern
             Some(format!("buy {} : {}", post.uuid, post.title).to_string()),
-            Some(60 as i64),
+            None
         );
         // Request invoice generation to the LN Server
         InvoiceUtils::generate_invoice(lnd_client, params).await
