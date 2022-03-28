@@ -1,0 +1,20 @@
+[package]
+name = "juniper_rocket_multipart_handler"
+version = "0.0.1"
+description = "A juniper multipart handler for Rocket web server"
+authors = ["Nelson Herbin <nelson@herbin.info>"]
+edition = "2018"
+license = "CC0-1.0"
+repository = "https://github.com/Asone/graphQLN"
+homepage = "https://github.com/Asone/graphQLN"
+
+[dependencies]
+multer = "2.0.2"
+rocket = "0.5.0-rc.1"
+juniper = "0.15.7"
+serde = "1.0.136"
+serde_json = "1.0.68"
+juniper_rocket = "0.8.0"
+
+[dependencies.tokio-util]
+version = "0.7.1"
