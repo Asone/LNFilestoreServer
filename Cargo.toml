@@ -1,3 +1,6 @@
+[workspace]
+members = ["juniper_rocket_multipart_handler"]
+
 [package]
 name = "lnapi"
 version = "0.1.1"
@@ -22,13 +25,19 @@ tonic = "0.6.2"
 hex = "0.4.3"
 serde = "1.0.136"
 serde_json = "1.0.68"
-lightning-invoice = "0.12.0"
+lightning-invoice = "0.13.0"
 diesel_migrations = "1.4.0"
 rocket-multipart-form-data = "0.10.0"
 uuid = { version = "0.8.2", features = ["serde", "v4"] }
 multer = "2.0.2"
+
 [dependencies.tokio-util]
-version = "0.6.6"
+version = "0.7.1"
+
+[dependencies.juniper_rocket_multipart_handler]
+path = "./juniper_rocket_multipart_handler"
+
 [dependencies.rocket_sync_db_pools]
 version = "0.1.0-rc.1"
 features = ["diesel_postgres_pool"]
+

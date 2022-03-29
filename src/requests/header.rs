@@ -1,8 +1,8 @@
 use diesel::result::Error;
 use rocket::{
     http::Status,
-    request::{self, local_cache, FromRequest, Outcome},
-    Request, State,
+    request::{FromRequest, Outcome},
+    Request
 };
 
 use tonic_lnd::rpc::invoice::InvoiceState;
@@ -36,7 +36,7 @@ impl<'r> FromRequest<'r> for PaymentRequestHeader {
                     Some(payment_request) => {
                         let api_payment = conn.find_api_payment(payment_request.to_string()).await;
                         match api_payment {
-                            Some(payment) => {
+                            Some(_) => {
                                 outcome_from_payment_request(request, payment_request).await
                             }
                             None => Outcome::Failure((Status::PaymentRequired, None)),

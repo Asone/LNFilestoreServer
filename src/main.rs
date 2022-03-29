@@ -10,8 +10,10 @@ extern crate diesel;
 
 extern crate diesel_derive_enum;
 extern crate dotenv;
+extern crate juniper_rocket_multipart_handler;
 extern crate tokio_util;
 extern crate tonic;
+
 mod app;
 mod catchers;
 mod cors;
@@ -22,7 +24,10 @@ mod requests;
 use catchers::payment_required::payment_required;
 use dotenv::dotenv;
 use juniper::EmptySubscription;
-use rocket::Rocket;
+use rocket::{
+    figment::Figment,
+    Rocket,
+};
 
 use crate::{
     app::Schema,
@@ -49,7 +54,10 @@ itconfig::config! {
 async fn main() {
     dotenv().ok();
 
+    let figment = Figment::from(rocket::Config::default());
+    // .merge(("limits", Limits::new().limit("json", 16.mebibytes())));
     Rocket::build()
+        // .configure(figment)
         .register("/", catchers![payment_required])
         .attach(PostgresConn::fairing())
         .manage(Schema::new(

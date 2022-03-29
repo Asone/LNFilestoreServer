@@ -1,7 +1,10 @@
+use std::collections::HashMap;
+
 use crate::{db::PostgresConn, lnd::client::LndClient};
 
 use derive_more::Deref;
-use tonic::{codegen::InterceptedService, transport::Channel};
+use juniper_rocket_multipart_handler::temp_file::TempFile;
+use tonic::codegen::InterceptedService;
 use tonic_lnd::{rpc::lightning_client::LightningClient, MacaroonInterceptor};
 
 /*
@@ -17,7 +20,7 @@ pub struct GQLContext {
     #[deref]
     pub pool: PostgresConn,
     pub lnd: LndClient,
-    pub files: Option<Vec<String>>,
+    pub files: Option<HashMap<String, TempFile>>,
 }
 
 impl juniper::Context for GQLContext {}
@@ -40,5 +43,9 @@ impl GQLContext {
     // Provides the instance of DB pool
     pub fn get_db_connection(&self) -> &PostgresConn {
         return &self.pool;
+    }
+
+    pub fn get_files(&self) -> &Option<HashMap<String, TempFile>> {
+        return &self.files;
     }
 }

@@ -9,7 +9,6 @@ use crate::{db::models::Post, graphql::context::GQLContext};
 use juniper::{FieldError, Value};
 use tonic_lnd::rpc::invoice::InvoiceState;
 use uuid::Uuid;
-
 pub struct Query;
 
 #[juniper::graphql_object(context = GQLContext)]

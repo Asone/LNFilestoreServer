@@ -1,28 +1,20 @@
-use std::collections::HashMap;
-
 use crate::{
     graphql::{context::GQLContext, mutation::Mutation, query::Query},
     lnd::client::LndClient,
 };
-use rocket::{
-    data::ToByteUnit, form::Form, fs::TempFile, http::ContentType, response::content, Data, State,
-};
-use rocket_multipart_form_data::{
-    FileField, MultipartFormData, MultipartFormDataField, MultipartFormDataOptions,
-};
+use juniper_rocket_multipart_handler::graphql_upload_wrapper::GraphQLUploadWrapper;
+use rocket::{ response::content, State };
 pub type Schema = RootNode<'static, Query, Mutation, EmptySubscription<GQLContext>>;
 
 use crate::db::PostgresConn;
 use crate::requests::header::PaymentRequestHeader;
 use juniper::{EmptySubscription, RootNode};
 use juniper_rocket::GraphQLResponse;
-use serde_json::Value;
 
 #[rocket::get("/")]
 pub fn graphiql() -> content::Html<String> {
     juniper_rocket::graphiql_source("/graphql", None)
 }
-
 /*
     This is a void handler that will return a 200 empty response
     for browsers that intends to check pre-flight for CORS rules.
@@ -101,21 +93,22 @@ pub async fn payable_post_graphql_handler(
 
 #[rocket::post("/upload", data = "<request>")]
 pub async fn upload<'r>(
-    request: crate::graphql::multipart::upload_request::GraphQLUploadRequest,
+    request: GraphQLUploadWrapper,
     schema: &State<Schema>,
     db: PostgresConn,
     lnd: LndClient,
 ) -> GraphQLResponse {
-    let files = request.files.clone();
-
-    request
+    let result = request
+        .operations
         .execute(
             &*schema,
             &GQLContext {
                 pool: db,
-                lnd: lnd,
-                files: files,
+                lnd,
+                files: request.files,
             },
         )
-        .await
+        .await;
+
+    result
 }
