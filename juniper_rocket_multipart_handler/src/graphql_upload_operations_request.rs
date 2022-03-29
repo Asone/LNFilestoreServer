@@ -1,32 +1,26 @@
-use juniper::{GraphQLTypeAsync};
+use juniper::{GraphQLTypeAsync, GraphQLType};
 use juniper_rocket::{GraphQLResponse};
-use multer::{Multipart, bytes::Bytes, Field};
-use rocket::{
-    data::{self, FromData, ToByteUnit},
-    form::{Error},
-    http::{ContentType, Status},
-    outcome::Outcome::{Failure, Forward, Success},
-    Data, Request, fs::FileName, Either,
-};
-use std::{fs::File, env, num::NonZeroU64, path::PathBuf, collections::HashMap};
-use std::io::prelude::*;
-use std::{sync::Arc};
-
+use rocket::http::Status;
 use juniper::{
-    http::{self, GraphQLBatchRequest},
+    http::GraphQLBatchRequest,
     DefaultScalarValue, GraphQLSubscriptionType,
     RootNode, ScalarValue,
 };
-use serde::Deserialize;
-#[derive(Debug, PartialEq)]
-pub struct GraphQLUploadOperationsRequest<S = DefaultScalarValue>
-where
-    S: ScalarValue,
-{
-    pub gql_request: GraphQLBatchRequest<S>
-}
 
-impl<S> GraphQLUploadOperationsRequest<S>
+/// A GraphQL operations request.
+/// 
+/// This struct replicates the [`GraphQLRequest`](https://github.com/graphql-rust/juniper/blob/master/juniper_rocket/src/lib.rs#L64) original behavior.
+/// It is provided and used with the upload wrapper as the original struct
+/// does not provide any constructor and the tuple constructor is private.
+#[derive(Debug, PartialEq)]
+pub struct GraphQLOperationsRequest<S = DefaultScalarValue>(
+pub GraphQLBatchRequest<S>
+)
+where
+    S: ScalarValue;
+
+
+impl<S> GraphQLOperationsRequest<S>
 where
     S: ScalarValue,
 {
@@ -46,7 +40,7 @@ where
         CtxT: Sync,
         S: Send + Sync,
     {
-        let response = self.gql_request.execute(root_node, context).await;
+        let response = self.0.execute(root_node, context).await;
         let status = if response.is_ok() {
             Status::Ok
         } else {
@@ -55,5 +49,34 @@ where
         let json = serde_json::to_string(&response).unwrap();
 
         GraphQLResponse(status, json)
+    }
+
+    /// Synchronously execute an incoming GraphQL query.
+    pub fn execute_sync<CtxT, QueryT, MutationT, SubscriptionT>(
+        &self,
+        root_node: &RootNode<QueryT, MutationT, SubscriptionT, S>,
+        context: &CtxT,
+    ) -> GraphQLResponse
+    where
+        QueryT: GraphQLType<S, Context = CtxT>,
+        MutationT: GraphQLType<S, Context = CtxT>,
+        SubscriptionT: GraphQLType<S, Context = CtxT>,
+    {
+        let response = self.0.execute_sync(root_node, context);
+        let status = if response.is_ok() {
+            Status::Ok
+        } else {
+            Status::BadRequest
+        };
+        let json = serde_json::to_string(&response).unwrap();
+
+        GraphQLResponse(status, json)
+    }
+
+    /// Returns the operation names associated with this request.
+    ///
+    /// For batch requests there will be multiple names.
+    pub fn operation_names(&self) -> Vec<Option<&str>> {
+        self.0.operation_names()
     }
 }
