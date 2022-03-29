@@ -1,24 +1,19 @@
-use juniper::{GraphQLTypeAsync, GraphQLType};
-use juniper_rocket::{GraphQLResponse};
-use rocket::http::Status;
 use juniper::{
-    http::GraphQLBatchRequest,
-    DefaultScalarValue, GraphQLSubscriptionType,
-    RootNode, ScalarValue,
+    http::GraphQLBatchRequest, DefaultScalarValue, GraphQLSubscriptionType, RootNode, ScalarValue,
 };
+use juniper::{GraphQLType, GraphQLTypeAsync};
+use juniper_rocket::GraphQLResponse;
+use rocket::http::Status;
 
 /// A GraphQL operations request.
-/// 
+///
 /// This struct replicates the [`GraphQLRequest`](https://github.com/graphql-rust/juniper/blob/master/juniper_rocket/src/lib.rs#L64) original behavior.
 /// It is provided and used with the upload wrapper as the original struct
 /// does not provide any constructor and the tuple constructor is private.
 #[derive(Debug, PartialEq)]
-pub struct GraphQLOperationsRequest<S = DefaultScalarValue>(
-pub GraphQLBatchRequest<S>
-)
+pub struct GraphQLOperationsRequest<S = DefaultScalarValue>(pub GraphQLBatchRequest<S>)
 where
     S: ScalarValue;
-
 
 impl<S> GraphQLOperationsRequest<S>
 where

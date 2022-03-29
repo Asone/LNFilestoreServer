@@ -1,18 +1,17 @@
-use multer::{Multipart, bytes::Bytes};
+use multer::{bytes::Bytes, Multipart};
 use rocket::{
     data::{self, FromData, ToByteUnit},
-    form::{Error},
+    form::Error,
     http::{ContentType, Status},
     outcome::Outcome::{Failure, Forward, Success},
-    Data, Request
+    Data, Request,
 };
-use std::{env, path::PathBuf, collections::HashMap};
-use std::{sync::Arc};
+use std::sync::Arc;
+use std::{collections::HashMap, env, path::PathBuf};
 
 use juniper::{
     http::{self, GraphQLBatchRequest},
-    DefaultScalarValue,
-    ScalarValue,
+    DefaultScalarValue, ScalarValue,
 };
 
 use crate::graphql_upload_operations_request::GraphQLOperationsRequest;
@@ -24,7 +23,7 @@ const BODY_LIMIT: u64 = 1024 * 100;
 
 #[derive(Debug)]
 pub enum MultipartFormParsingError {
-    BoundaryParsingError
+    BoundaryParsingError,
 }
 
 enum ProcessorType {
@@ -34,17 +33,16 @@ enum ProcessorType {
     UKNOWN,
 }
 
-
 /// A Wrapper that handles HTTP GraphQL requests for [`Rocket`](https://rocket.rs/)
 /// with multipart/form-data support that follows the Apollo's
-/// [`unofficial specification`](https://github.com/jaydenseric/graphql-multipart-request-spec.). 
+/// [`unofficial specification`](https://github.com/jaydenseric/graphql-multipart-request-spec.).
 ///
 /// # Main concept
 ///
 /// The current struct is nothing more than a wrapper
-/// that will return two fields : 
+/// that will return two fields :
 /// - `operations` : Contains the graphQL Request to be executed.
-///     This object is nothing more than a replica 
+///     This object is nothing more than a replica
 ///     of the original [`GraphQLRequest`](https://github.com/graphql-rust/juniper/blob/master/juniper_rocket/src/lib.rs#L64)
 ///     object.
 /// - `files` : An optional HashMap that contains the buffered files data.
@@ -56,11 +54,11 @@ enum ProcessorType {
 ///
 /// You can load the GraphQLUploadWrapper the same way
 /// you load the GraphQLRequest as both are data guards.
-/// The main difference will be that instead, you'll call the 
+/// The main difference will be that instead, you'll call the
 /// execution of the query through the `operations` property
-/// of the wrapper. 
+/// of the wrapper.
 ///
-///  Below is basic example : 
+///  Below is basic example :
 ///
 /// ```
 /// #[rocket::post("/upload", data = "<request>")]
@@ -77,8 +75,8 @@ enum ProcessorType {
 /// In order to fetch the uploaded files
 /// You'll need to implement your own context object
 /// That will pass the buffered files to your execution methods.
-/// 
-/// Example : 
+///
+/// Example :
 /// ```
 /// struct Ctx{
 ///   files: Option<HashMap<String, TempFile>>
@@ -86,8 +84,8 @@ enum ProcessorType {
 /// impl juniper::Context for Ctx {}
 /// ```
 ///
-/// You'll then be able to inject the buffered files to your 
-/// operations like this : 
+/// You'll then be able to inject the buffered files to your
+/// operations like this :
 /// ```
 /// struct Ctx{ files: Option<HashMap<String, TempFile>> };
 /// impl juniper::Context for Ctx {}
@@ -105,9 +103,9 @@ enum ProcessorType {
 ///
 /// The Wrapper does nothing special with the uploaded files aside
 /// allocating them in heap memory through the Hashmap which means
-/// they won't be stored anywhere, not even in a temporary folder, 
-/// unless you decide to. 
-/// 
+/// they won't be stored anywhere, not even in a temporary folder,
+/// unless you decide to.
+///
 /// See [`TempFile`] for more available data and information around uploaded files.
 #[derive(Debug, PartialEq)]
 pub struct GraphQLUploadWrapper<S = DefaultScalarValue>
@@ -122,7 +120,6 @@ impl<S> GraphQLUploadWrapper<S>
 where
     S: ScalarValue,
 {
-
     pub async fn get_files(&self) -> &Option<HashMap<String, TempFile>> {
         &self.files
     }
@@ -154,12 +151,11 @@ where
         )))
     }
 
-    
     /// Body reader for multipart/form-data content type.
     async fn from_multipart_body<'r>(
         data: Data<'r>,
         content_type: &ContentType,
-    ) -> Result<(GraphQLBatchRequest<S>,Option<HashMap<String, TempFile>>), Error<'r>> {
+    ) -> Result<(GraphQLBatchRequest<S>, Option<HashMap<String, TempFile>>), Error<'r>> {
         // Builds a void query for development
         let mut query: String = String::new();
         let boundary = Self::get_boundary(content_type).unwrap();
@@ -170,9 +166,9 @@ where
 
         // Create a multipart object based on multer
         let mut multipart = Multipart::new(stream, boundary);
-        
+
         let mut files_map: HashMap<String, TempFile> = HashMap::new();
-        
+
         // Iterate on the form fields, which can be
         // either text content or binary.
         while let Some(entry) = multipart.next_field().await.unwrap() {
@@ -183,11 +179,10 @@ where
 
             let name = field_name;
 
-            let path = format!("{}",env::temp_dir().display());
+            let path = format!("{}", env::temp_dir().display());
 
             match entry.content_type().as_ref() {
                 Some(_) => {
-
                     let file_name = match entry.file_name() {
                         Some(filename) => Arc::<&str>::from(filename).to_string(),
                         None => continue,
@@ -195,21 +190,18 @@ where
 
                     let content = match entry.bytes().await {
                         Ok(d) => d,
-                        Err(_) => {
-                            Bytes::new()
-                        }
+                        Err(_) => Bytes::new(),
                     };
 
                     let tmpfile = TempFile {
                         name: file_name,
                         size: Some(content.len()),
                         local_path: PathBuf::from(&path),
-                        content: content
+                        content: content,
                     };
 
                     files_map.insert(name, tmpfile);
-
-                },
+                }
                 None => {
                     let content_data = entry.text().await;
 
@@ -221,7 +213,7 @@ where
                                 query = result;
                             }
                         }
-                        Err(_) => continue
+                        Err(_) => continue,
                     };
                 }
             }
@@ -229,12 +221,13 @@ where
 
         // Default parser
         match serde_json::from_str(&query) {
-            Ok(req) => Ok((req,Some(files_map))),
-            Err(_) => Err(rocket::form::Error::validation("The provided request could not be parsed.")),
+            Ok(req) => Ok((req, Some(files_map))),
+            Err(_) => Err(rocket::form::Error::validation(
+                "The provided request could not be parsed.",
+            )),
         }
     }
 
-    
     ///  Returns an enum value for a specific processors based on request Content-type
     fn get_processor_type(content_type: &ContentType) -> ProcessorType {
         let top = content_type.top().as_str();
@@ -248,7 +241,6 @@ where
         }
     }
 
-    
     /// Extracts the boundary for a multipart/form-data request
     pub fn get_boundary(content_type: &ContentType) -> Result<&str, MultipartFormParsingError> {
         match content_type.params().find(|&(k, _)| k == "boundary") {
@@ -256,7 +248,6 @@ where
             None => Err(MultipartFormParsingError::BoundaryParsingError),
         }
     }
-
 }
 
 #[rocket::async_trait]
@@ -279,10 +270,9 @@ where
             ProcessorType::JSON => {
                 Box::pin(async move {
                     match Self::from_json_body(data) {
-                        Ok(result) => Success(GraphQLUploadWrapper{
-                            operations: GraphQLOperationsRequest(result)
-                            ,
-                            files: None
+                        Ok(result) => Success(GraphQLUploadWrapper {
+                            operations: GraphQLOperationsRequest(result),
+                            files: None,
                         }),
                         Err(error) => Failure((Status::BadRequest, format!("{}", error))),
                     }
@@ -293,9 +283,9 @@ where
             ProcessorType::GRAPHQL => {
                 Box::pin(async move {
                     match Self::from_graphql_body(data) {
-                        Ok(result) => Success(GraphQLUploadWrapper{
+                        Ok(result) => Success(GraphQLUploadWrapper {
                             operations: GraphQLOperationsRequest(result),
-                            files: None
+                            files: None,
                         }),
                         Err(error) => Failure((Status::BadRequest, format!("{}", error))),
                     }
@@ -305,9 +295,9 @@ where
             ProcessorType::MULTIPART => {
                 Box::pin(async move {
                     match Self::from_multipart_body(data, content_type).await {
-                        Ok(result) => Success(GraphQLUploadWrapper{
+                        Ok(result) => Success(GraphQLUploadWrapper {
                             operations: GraphQLOperationsRequest(result.0),
-                            files: result.1
+                            files: result.1,
                         }),
                         Err(error) => Failure((Status::BadRequest, format!("{}", error))),
                     }
