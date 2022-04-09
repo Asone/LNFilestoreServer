@@ -1,3 +1,4 @@
+use diesel::PgConnection;
 use rocket_sync_db_pools::{database, diesel};
 
 use self::models::api_payment::ApiPayment;

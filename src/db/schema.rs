@@ -31,6 +31,28 @@ table! {
     }
 }
 
-joinable!(payment -> post (post_uuid));
+table! {
+    session (uuid) {
+        uuid -> Uuid,
+        token -> Text,
+        user_uuid -> Uuid,
+        created_at -> Timestamptz,
+        expires_at -> Timestamptz,
+    }
+}
 
-allow_tables_to_appear_in_same_query!(api_payment, payment, post,);
+table! {
+    user (uuid) {
+        uuid -> Uuid,
+        login -> Text,
+        email -> Text,
+        password -> Text,
+        created_at -> Timestamptz,
+        updated_at -> Timestamptz,
+    }
+}
+
+joinable!(payment -> post (post_uuid));
+joinable!(session -> user (user_uuid));
+
+allow_tables_to_appear_in_same_query!(api_payment, payment, post, session, user,);
