@@ -16,9 +16,13 @@ mod app;
 mod catchers;
 mod cors;
 mod db;
+mod errors;
+mod forms;
 mod graphql;
+mod guards;
 mod lnd;
 mod requests;
+
 use catchers::payment_required::payment_required;
 use dotenv::dotenv;
 use juniper::EmptySubscription;
@@ -32,7 +36,7 @@ use crate::{
 };
 
 use crate::app::{
-    get_graphql_handler, graphiql, options_handler, payable_post_graphql_handler,
+    admin, get_graphql_handler, graphiql, login, options_handler, payable_post_graphql_handler,
     post_graphql_handler,
 };
 use crate::db::PostgresConn;
@@ -64,7 +68,9 @@ async fn main() {
                 graphiql,
                 get_graphql_handler,
                 post_graphql_handler,
-                payable_post_graphql_handler
+                payable_post_graphql_handler,
+                login,
+                admin
             ],
         )
         .attach(Cors)
