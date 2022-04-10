@@ -1,7 +1,7 @@
 use crate::{db::PostgresConn, lnd::client::LndClient};
 
 use derive_more::Deref;
-use tonic::{codegen::InterceptedService, transport::Channel};
+use tonic::codegen::InterceptedService;
 use tonic_lnd::{rpc::lightning_client::LightningClient, MacaroonInterceptor};
 
 /*

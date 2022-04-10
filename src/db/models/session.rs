@@ -1,6 +1,6 @@
 pub use crate::db::schema::session;
 use crate::errors::authentication::AuthenticationError;
-use chrono::{NaiveDateTime, Utc};
+use chrono::{Duration, NaiveDateTime, Utc};
 use diesel;
 use serde::Serialize;
 use uuid::Uuid;
@@ -31,11 +31,12 @@ pub struct NewUserSession {
 
 impl From<(String, User)> for NewUserSession {
     fn from(data: (String, User)) -> Self {
+        let expires_at = Utc::now() + Duration::days(128);
         Self {
             uuid: Uuid::new_v4(),
             token: Uuid::new_v4().to_string(),
-            expires_at: Utc::now().naive_utc(),
             user_uuid: data.1.uuid,
+            expires_at: expires_at.naive_utc(),
         }
     }
 }
@@ -54,7 +55,7 @@ impl UserSession {
 
         match result {
             Ok(result) => Ok(result),
-            Err(e) => Err(AuthenticationError::DbError(
+            Err(_) => Err(AuthenticationError::DbError(
                 "An error happened while creating session".to_string(),
             )),
         }

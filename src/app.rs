@@ -2,8 +2,7 @@
 /// Todo : Split routes in different files
 ///
 use crate::{
-    db::models::{session::UserSession, user_token::UserToken},
-    errors::authentication::AuthenticationError,
+    db::models::user_token::UserToken,
     forms::login_user::LoginUser,
     graphql::{context::GQLContext, mutation::Mutation, query::Query},
     guards::user_guard::UserGuard,
@@ -11,14 +10,10 @@ use crate::{
 };
 
 use rocket::{
-    figment::value::Value,
     form::{Form, Strict},
     http::{Cookie, Status},
-    response::{
-        content::{self, Json},
-        status, Result,
-    },
-    Response, State,
+    response::content::{self},
+    State,
 };
 pub type Schema = RootNode<'static, Query, Mutation, EmptySubscription<GQLContext>>;
 use crate::db::PostgresConn;
@@ -99,8 +94,7 @@ pub async fn login(
 ///
 #[rocket::post("/admin", data = "<request>")]
 pub async fn admin(
-    user_guard: UserGuard,
-    cookies: &CookieJar<'_>,
+    _user_guard: UserGuard,
     request: juniper_rocket::GraphQLRequest,
     schema: &State<Schema>,
     db: PostgresConn,

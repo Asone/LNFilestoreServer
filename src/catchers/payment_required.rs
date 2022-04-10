@@ -3,7 +3,6 @@ use crate::db::PostgresConn;
 use crate::lnd::client::LndClient;
 use rocket::response::content::Json;
 use rocket::response::status;
-use rocket::serde::Serialize;
 use rocket::{catch, http::Status, Request};
 
 /**

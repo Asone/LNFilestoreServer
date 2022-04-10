@@ -1,3 +1,10 @@
+use chrono::Utc;
+use jsonwebtoken::{EncodingKey, Header};
+use serde::{Deserialize, Serialize};
+
+use super::session::UserSession;
+
+/// Represents a user token
 #[derive(Debug, Serialize, Deserialize)]
 pub struct UserToken {
     // issued at
@@ -9,28 +16,14 @@ pub struct UserToken {
     pub token: String, // pub login_session: String,
 }
 
-static ONE_WEEK: i64 = 60 * 60 * 24 * 7; // in seconds
-
-use chrono::Utc;
-use jsonwebtoken::{EncodingKey, Header};
-use serde::{Deserialize, Serialize};
-use serde_json::{json, Error, Value};
-
-use super::{session::UserSession, user::User};
-
-// #[derive(Debug, Insertable)]
-// #[table_name = "session"]
-// pub struct  NewUserToken {
-//     pub uuid: uuid::Uuid,
-//     pub token: String,
-//     expires_at: DateTime,
-// }
-
 impl UserToken {
+    /// Encodes the UserToken object to a JWT Token
     pub fn generate_token(
         user_session: UserSession,
     ) -> Result<String, jsonwebtoken::errors::Error> {
         let payload = Self::from(user_session);
+        // let header = Header::new(Algorithm::HS256);
+
         jsonwebtoken::encode(
             &Header::default(),
             &payload,

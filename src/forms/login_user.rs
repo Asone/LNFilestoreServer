@@ -1,4 +1,3 @@
-use diesel::PgConnection;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -12,6 +11,7 @@ use crate::{
     errors::authentication::AuthenticationError,
 };
 
+/// Login form
 #[derive(FromForm, Serialize, Debug, Deserialize, Clone)]
 pub struct LoginUser {
     pub username: String,
@@ -22,7 +22,9 @@ pub struct LoginUser {
 impl LoginUser {
     pub async fn login(self, db: PostgresConn) -> Result<UserSession, AuthenticationError> {
         let password = self.password.clone();
-        let user = db.run(|c| User::find_one_by_login(self.username, c)).await;
+        let user = db
+            .run(|c| User::find_one_by_username(self.username, c))
+            .await;
 
         match user {
             Some(user) => match password.as_str() == user.password.as_str() {
