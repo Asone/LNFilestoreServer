@@ -43,6 +43,7 @@ use crate::db::PostgresConn;
 
 itconfig::config! {
     DATABASE_URL: String,
+    JWT_TOKEN_SECRET: String
 
     ROCKET {
         static BASE_URL: String => "/",
@@ -52,6 +53,7 @@ itconfig::config! {
 #[rocket::main]
 async fn main() {
     dotenv().ok();
+    config::init();
 
     Rocket::build()
         .register("/", catchers![payment_required])
