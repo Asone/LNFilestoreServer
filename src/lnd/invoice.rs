@@ -1,8 +1,9 @@
+#![allow(deprecated)]
+
 use crate::db::models::Post;
 use chrono::{Duration, NaiveDateTime, Utc};
 use std::env;
 use tonic::codegen::InterceptedService;
-use tonic::transport::Channel;
 use tonic::{Code, Status};
 use tonic_lnd::rpc::lightning_client::LightningClient;
 use tonic_lnd::rpc::{Invoice, PaymentHash};

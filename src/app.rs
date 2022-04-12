@@ -41,13 +41,21 @@ pub async fn options_handler() {}
 */
 #[rocket::get("/graphql?<request>")]
 pub async fn get_graphql_handler(
+    user_guard: UserGuard,
     request: juniper_rocket::GraphQLRequest,
     schema: &State<Schema>,
     db: PostgresConn,
     lnd: LndClient,
 ) -> GraphQLResponse {
     request
-        .execute(&*schema, &GQLContext { pool: db, lnd: lnd })
+        .execute(
+            &*schema,
+            &GQLContext {
+                pool: db,
+                lnd: lnd,
+                user: user_guard.0,
+            },
+        )
         .await
 }
 
@@ -56,13 +64,21 @@ pub async fn get_graphql_handler(
 */
 #[rocket::post("/graphql", data = "<request>")]
 pub async fn post_graphql_handler(
+    user_guard: UserGuard,
     request: juniper_rocket::GraphQLRequest,
     schema: &State<Schema>,
     db: PostgresConn,
     lnd: LndClient,
 ) -> GraphQLResponse {
     request
-        .execute(&*schema, &GQLContext { pool: db, lnd: lnd })
+        .execute(
+            &*schema,
+            &GQLContext {
+                pool: db,
+                lnd: lnd,
+                user: user_guard.0,
+            },
+        )
         .await
 }
 
@@ -92,22 +108,22 @@ pub async fn login(
 /// User Authentication protected route
 /// It shall provide an access to full graphql schema
 ///
-#[rocket::post("/admin", data = "<request>")]
-pub async fn admin(
-    _user_guard: UserGuard,
-    request: juniper_rocket::GraphQLRequest,
-    schema: &State<Schema>,
-    db: PostgresConn,
-    lnd: LndClient,
-) -> GraphQLResponse {
-    request
-        .execute(&*schema, &GQLContext { pool: db, lnd: lnd })
-        .await
-}
+// #[rocket::post("/admin", data = "<request>")]
+// pub async fn admin(
+//     request: juniper_rocket::GraphQLRequest,
+//     schema: &State<Schema>,
+//     db: PostgresConn,
+//     lnd: LndClient,
+// ) -> GraphQLResponse {
+//     request
+//         .execute(&*schema, &GQLContext { pool: db, lnd: lnd })
+//         .await
+// }
 
 /// Calls the API through an API-scoped paywall
 #[rocket::post("/payable", data = "<request>")]
 pub async fn payable_post_graphql_handler(
+    user_guard: UserGuard,
     request: juniper_rocket::GraphQLRequest,
     schema: &State<Schema>,
     db: PostgresConn,
@@ -115,6 +131,13 @@ pub async fn payable_post_graphql_handler(
     _payment_request: PaymentRequestHeader,
 ) -> GraphQLResponse {
     request
-        .execute(&*schema, &GQLContext { pool: db, lnd: lnd })
+        .execute(
+            &*schema,
+            &GQLContext {
+                pool: db,
+                lnd: lnd,
+                user: user_guard.0,
+            },
+        )
         .await
 }

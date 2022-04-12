@@ -1,4 +1,7 @@
-use crate::{db::PostgresConn, lnd::client::LndClient};
+use crate::{
+    db::{models::user::User, PostgresConn},
+    lnd::client::LndClient,
+};
 
 use derive_more::Deref;
 use tonic::codegen::InterceptedService;
@@ -17,6 +20,7 @@ pub struct GQLContext {
     #[deref]
     pub pool: PostgresConn,
     pub lnd: LndClient,
+    pub user: Option<User>,
 }
 
 impl juniper::Context for GQLContext {}

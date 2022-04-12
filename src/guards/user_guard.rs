@@ -9,9 +9,12 @@ use rocket::{
     Request,
 };
 
-use crate::db::models::user_token::UserToken;
+use crate::db::{
+    models::{user::User, user_token::UserToken},
+    PostgresConn,
+};
 
-pub struct UserGuard(pub bool);
+pub struct UserGuard(pub Option<User>);
 
 impl UserGuard {
     /// Checks that the authorization header includes Bearer mention
@@ -51,13 +54,24 @@ impl<'r> FromRequest<'r> for UserGuard {
 
                 match token {
                     Ok(token) => {
-                        let t = token.claims;
-                        Outcome::Success(UserGuard(true))
+                        let user_uuid = uuid::Uuid::parse_str(token.claims.user.as_str()).unwrap();
+
+                        let pool = request.guard::<PostgresConn>().await.succeeded();
+
+                        match pool {
+                            Some(conn) => {
+                                let user = conn
+                                    .run(move |c| User::find_one_by_uuid(user_uuid, c))
+                                    .await;
+                                Outcome::Success(UserGuard(user))
+                            }
+                            None => Outcome::Failure((Status::InternalServerError, ())),
+                        }
                     }
-                    Err(_) => Outcome::Failure((Status::ExpectationFailed, ())),
+                    Err(_) => Outcome::Failure((Status::Unauthorized, ())),
                 }
             }
-            None => Outcome::Failure((Status::Forbidden, ())),
+            None => Outcome::Success(UserGuard(None)),
         }
     }
 }

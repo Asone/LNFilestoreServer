@@ -27,7 +27,7 @@ pub async fn payment_required<'r>(
                             ApiPayment::create_from_client(lnd_client, db, None).await
                         })
                         .await;
-                    match (payment_request_result) {
+                    match payment_request_result {
                         Ok(payment_request) => {
                             let json_state =
                                 format!(r#"{{"payment": {:?}}}"#, payment_request.request.as_str());

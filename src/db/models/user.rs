@@ -29,4 +29,13 @@ impl User {
             .optional()
             .unwrap()
     }
+
+    pub fn find_one_by_uuid(user_uuid: uuid::Uuid, connection: &PgConnection) -> Option<User> {
+        use crate::db::schema::user::dsl::*;
+
+        user.filter(uuid.eq(user_uuid))
+            .first::<User>(connection)
+            .optional()
+            .unwrap()
+    }
 }
