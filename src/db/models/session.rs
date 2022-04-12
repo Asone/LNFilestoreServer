@@ -32,17 +32,7 @@ pub struct NewUserSession {
 }
 
 impl NewUserSession {
-    fn expiry_generator(minutes_duration: Option<i64>) -> DateTime<Utc> {
-        let duration = match minutes_duration {
-            Some(duration) => duration,
-            None => match env::var("JWT_TOKEN_DURATION") {
-                Ok(duration) => duration.parse::<i64>().unwrap(),
-                Err(_) => 1000 as i64,
-            },
-        };
 
-        Utc::now() + Duration::minutes(duration)
-    }
 }
 
 impl From<(String, User)> for NewUserSession {
@@ -51,7 +41,7 @@ impl From<(String, User)> for NewUserSession {
             uuid: Uuid::new_v4(),
             token: Uuid::new_v4().to_string(),
             user_uuid: data.1.uuid,
-            expires_at: Self::expiry_generator(None).naive_utc(),
+            expires_at: UserSession::expiry_generator(None).naive_utc(),
         }
     }
 }
@@ -74,5 +64,30 @@ impl UserSession {
                 "An error happened while creating session".to_string(),
             )),
         }
+    }
+
+    pub fn update_session_expiry(current_session: UserSession, connection: &PgConnection) -> Result<UserSession, ()>{
+           use crate::db::schema::session::dsl::*;
+
+            let result = diesel::update(session.filter(uuid.eq(current_session.uuid)))
+            .set(expires_at.eq(Self::expiry_generator(None)))
+            .get_result::<UserSession>(connection);
+
+            match result {
+                Ok(result) => Ok(result),
+                Err(_) => Err(())
+            }
+    }
+
+    fn expiry_generator(minutes_duration: Option<i64>) -> DateTime<Utc> {
+        let duration = match minutes_duration {
+            Some(duration) => duration,
+            None => match env::var("JWT_TOKEN_DURATION") {
+                Ok(duration) => duration.parse::<i64>().unwrap(),
+                Err(_) => 1000 as i64,
+            },
+        };
+
+        Utc::now() + Duration::minutes(duration)
     }
 }

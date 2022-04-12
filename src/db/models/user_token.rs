@@ -1,3 +1,5 @@
+use std::env;
+
 use chrono::Utc;
 use jsonwebtoken::{EncodingKey, Header};
 use serde::{Deserialize, Serialize};
@@ -17,6 +19,7 @@ pub struct UserToken {
 }
 
 impl UserToken {
+
     /// Encodes the UserToken object to a JWT Token
     pub fn generate_token(
         user_session: UserSession,
@@ -27,7 +30,7 @@ impl UserToken {
         jsonwebtoken::encode(
             &Header::default(),
             &payload,
-            &EncodingKey::from_secret("secret".as_ref()),
+            &EncodingKey::from_secret(env::var("JWT_TOKEN_SECRET").unwrap().as_ref()),
         )
     }
 }
