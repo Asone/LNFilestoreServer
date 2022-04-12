@@ -12,9 +12,6 @@ extern crate diesel_derive_enum;
 extern crate dotenv;
 extern crate tonic;
 
-#[macro_use]
-extern crate custom_macros;
-
 mod app;
 mod catchers;
 mod cors;
