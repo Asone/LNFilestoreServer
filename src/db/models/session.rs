@@ -1,6 +1,8 @@
+use std::env;
+
 pub use crate::db::schema::session;
 use crate::errors::authentication::AuthenticationError;
-use chrono::{Duration, NaiveDateTime, Utc};
+use chrono::{DateTime, Duration, NaiveDateTime, Utc};
 use diesel;
 use serde::Serialize;
 use uuid::Uuid;
@@ -29,14 +31,27 @@ pub struct NewUserSession {
     pub expires_at: NaiveDateTime,
 }
 
+impl NewUserSession {
+    fn expiry_generator(minutes_duration: Option<i64>) -> DateTime<Utc> {
+        let duration = match minutes_duration {
+            Some(duration) => duration,
+            None => match env::var("JWT_TOKEN_DURATION") {
+                Ok(duration) => duration.parse::<i64>().unwrap(),
+                Err(_) => 1000 as i64,
+            },
+        };
+
+        Utc::now() + Duration::minutes(duration)
+    }
+}
+
 impl From<(String, User)> for NewUserSession {
     fn from(data: (String, User)) -> Self {
-        let expires_at = Utc::now() + Duration::days(128);
         Self {
             uuid: Uuid::new_v4(),
             token: Uuid::new_v4().to_string(),
             user_uuid: data.1.uuid,
-            expires_at: expires_at.naive_utc(),
+            expires_at: Self::expiry_generator(None).naive_utc(),
         }
     }
 }
