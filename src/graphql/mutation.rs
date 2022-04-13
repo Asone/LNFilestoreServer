@@ -32,7 +32,7 @@ impl Mutation {
     ) -> FieldResult<PostType> {
         if Self::is_authenticated(&context.user) == false {
             return Err(FieldError::new(
-                "You need to be authenticated to activate this mutation",
+                "You need to be authenticated to use this mutation",
                 graphql_value!(""),
             ));
         }
@@ -49,5 +49,30 @@ impl Mutation {
                 Err(FieldError::new(e, graphql_value!(error)))
             }
         }
+    }
+
+
+    /// Changes password for current user
+    async fn change_password<'a>(
+        context: &'a GQLContext,
+        password: String
+    ) ->  FieldResult<bool> {
+
+        if Self::is_authenticated(&context.user) == false {
+            return Err(FieldError::new(
+                "You need to be authenticated to activate this mutation",
+                graphql_value!(""),
+            ));
+        }
+
+        let user = context.get_user().to_owned().unwrap();
+        let connection = context.get_db_connection();
+        let result = connection.run(move |c| User::change_password(user.uuid, password, c)).await;
+
+        match result {
+            Ok(_) => Ok(true),
+            Err(_) => Ok(false)
+        }
+        
     }
 }

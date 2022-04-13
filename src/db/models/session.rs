@@ -18,8 +18,8 @@ pub struct UserSession {
     uuid: Uuid,
     pub token: String,
     pub user_uuid: Uuid,
-    pub expires_at: NaiveDateTime,
     pub created_at: NaiveDateTime,
+    pub expires_at: NaiveDateTime,
 }
 
 #[derive(Debug, Insertable, Queryable)]

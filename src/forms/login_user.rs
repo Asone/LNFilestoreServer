@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use bcrypt::{DEFAULT_COST, hash, verify};
 
 use crate::{
     db::{
@@ -26,17 +27,23 @@ impl LoginUser {
             .run(|c| User::find_one_by_username(self.username, c))
             .await;
 
+        let hashed_password = hash(&password, DEFAULT_COST).unwrap();
         match user {
-            Some(user) => match password.as_str() == user.password.as_str() {
-                true => {
+            Some(user) => match verify(password.as_str(), user.password.as_str()) {
+                Ok(result) => match result {
+
+                    true => {
                     db.run(move |c| {
                         UserSession::create(NewUserSession::from(("toto".to_string(), user)), c)
                     })
                     .await
-                }
-                false => Err(AuthenticationError::PasswordMismatch(
+                    }
+                    false => Err(AuthenticationError::PasswordMismatch(
                     "Passwords dont match".to_string(),
-                )),
+                    )),
+                },
+                Err(_) => Err(AuthenticationError::InternalDecryptionError)
+                
             },
             None => Err(AuthenticationError::UserNotFound(
                 "User not found".to_string(),

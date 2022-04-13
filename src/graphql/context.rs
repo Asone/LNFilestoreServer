@@ -44,4 +44,9 @@ impl GQLContext {
     pub fn get_db_connection(&self) -> &PostgresConn {
         return &self.pool;
     }
+
+    /// Provides the instance of optional user
+    pub fn get_user(&self) -> &Option<User> {
+        return &self.user;
+    }
 }

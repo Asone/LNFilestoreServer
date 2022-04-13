@@ -27,7 +27,7 @@ diesel_migrations = "1.4.0"
 uuid = { version = "0.8.2", features = ["serde", "v4"] }
 jsonwebtoken = "8.0.1"
 regex = "1.5.5" 
-
+bcrypt = "0.12"
 [dependencies.rocket_sync_db_pools]
 version = "0.1.0-rc.1"
 

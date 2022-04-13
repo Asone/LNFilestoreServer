@@ -5,7 +5,7 @@ use crate::{
     db::models::user_token::UserToken,
     forms::login_user::LoginUser,
     graphql::{context::GQLContext, mutation::Mutation, query::Query},
-    guards::user_guard::UserGuard,
+    guards::userguard::UserGuard,
     lnd::client::LndClient,
 };
 
@@ -17,7 +17,7 @@ use rocket::{
 };
 pub type Schema = RootNode<'static, Query, Mutation, EmptySubscription<GQLContext>>;
 use crate::db::PostgresConn;
-use crate::requests::header::PaymentRequestHeader;
+use crate::guards::paymentrequestheader::PaymentRequestHeader;
 use juniper::{EmptySubscription, RootNode};
 use juniper_rocket::GraphQLResponse;
 use rocket::http::CookieJar;
@@ -41,11 +41,11 @@ pub async fn options_handler() {}
 */
 #[rocket::get("/graphql?<request>")]
 pub async fn get_graphql_handler(
-    user_guard: UserGuard,
     request: juniper_rocket::GraphQLRequest,
     schema: &State<Schema>,
     db: PostgresConn,
     lnd: LndClient,
+    user_guard: UserGuard,
 ) -> GraphQLResponse {
     request
         .execute(
@@ -64,11 +64,11 @@ pub async fn get_graphql_handler(
 */
 #[rocket::post("/graphql", data = "<request>")]
 pub async fn post_graphql_handler(
-    user_guard: UserGuard,
     request: juniper_rocket::GraphQLRequest,
     schema: &State<Schema>,
     db: PostgresConn,
     lnd: LndClient,
+    user_guard: UserGuard,
 ) -> GraphQLResponse {
     request
         .execute(
@@ -85,9 +85,9 @@ pub async fn post_graphql_handler(
 /// Authentication route
 #[rocket::post("/auth", data = "<user_form>")]
 pub async fn login(
+    db: PostgresConn,
     cookies: &CookieJar<'_>,
     user_form: Form<Strict<LoginUser>>,
-    db: PostgresConn,
 ) -> rocket::http::Status {
     let user = user_form.into_inner().into_inner();
 
@@ -123,12 +123,12 @@ pub async fn login(
 /// Calls the API through an API-scoped paywall
 #[rocket::post("/payable", data = "<request>")]
 pub async fn payable_post_graphql_handler(
-    user_guard: UserGuard,
     request: juniper_rocket::GraphQLRequest,
     schema: &State<Schema>,
     db: PostgresConn,
     lnd: LndClient,
     _payment_request: PaymentRequestHeader,
+    user_guard: UserGuard,
 ) -> GraphQLResponse {
     request
         .execute(

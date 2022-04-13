@@ -21,21 +21,16 @@ mod forms;
 mod graphql;
 mod guards;
 mod lnd;
-mod requests;
 
-use catchers::payment_required::payment_required;
 use dotenv::dotenv;
 use juniper::EmptySubscription;
 use rocket::Rocket;
 
-use crate::{
-    app::Schema,
-    cors::Cors,
-    graphql::context::GQLContext,
-    graphql::{mutation::Mutation, query::Query},
-};
-
-use crate::app::{
+use catchers::payment_required::payment_required;
+use cors::Cors;
+use graphql::{ context::GQLContext, mutation::Mutation, query::Query };
+use app::Schema;
+use app::{
     get_graphql_handler, graphiql, login, options_handler, payable_post_graphql_handler,
     post_graphql_handler,
 };

@@ -4,4 +4,5 @@ pub enum AuthenticationError {
     PasswordMismatch(String),
     LoginError(String),
     UserNotFound(String),
+    InternalDecryptionError
 }
