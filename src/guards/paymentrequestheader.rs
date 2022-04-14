@@ -17,10 +17,11 @@ use crate::{
         invoice::{InvoiceParams, InvoiceUtils},
     },
 };
-/**
-   Provides a payment request validation guard.
-   If no payment_request is provided through the
-*/
+
+/// Provides a payment request validation guard.
+/// If no payment_request is provided through the headers
+/// an invoice should be generated and transmitted to local cache  
+/// to be injected as response in further catcher
 pub struct PaymentRequestHeader(pub Option<String>);
 
 #[rocket::async_trait]
@@ -61,6 +62,7 @@ impl<'r> FromRequest<'r> for PaymentRequestHeader {
     }
 }
 
+/// Generates an invoice and saves its value in databasee
 async fn request_new_api_payment(
     lnd_client: LndClient,
     db: PostgresConn,
@@ -73,6 +75,8 @@ async fn request_new_api_payment(
         .await
 }
 
+/// Creates an outcome from a payment request query to the lnd server
+/// and performs an invoice state check
 async fn outcome_from_payment_request<'r>(
     request: &'r Request<'_>,
     payment_request: &'r str,
@@ -90,6 +94,7 @@ async fn outcome_from_payment_request<'r>(
     }
 }
 
+/// Creates an outcome for guard based on the invoice state on the lnd server
 fn outcome_from_invoice_state(
     state: InvoiceState,
     payment_request: &str,

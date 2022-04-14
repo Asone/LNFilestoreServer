@@ -44,8 +44,8 @@ pub async fn get_graphql_handler(
     request: juniper_rocket::GraphQLRequest,
     schema: &State<Schema>,
     db: PostgresConn,
-    lnd: LndClient,
     user_guard: UserGuard,
+    lnd: LndClient,
 ) -> GraphQLResponse {
     request
         .execute(
@@ -67,8 +67,8 @@ pub async fn post_graphql_handler(
     request: juniper_rocket::GraphQLRequest,
     schema: &State<Schema>,
     db: PostgresConn,
-    lnd: LndClient,
     user_guard: UserGuard,
+    lnd: LndClient,
 ) -> GraphQLResponse {
     request
         .execute(
@@ -104,21 +104,6 @@ pub async fn login(
         Err(_) => Status::ExpectationFailed,
     }
 }
-
-/// User Authentication protected route
-/// It shall provide an access to full graphql schema
-///
-// #[rocket::post("/admin", data = "<request>")]
-// pub async fn admin(
-//     request: juniper_rocket::GraphQLRequest,
-//     schema: &State<Schema>,
-//     db: PostgresConn,
-//     lnd: LndClient,
-// ) -> GraphQLResponse {
-//     request
-//         .execute(&*schema, &GQLContext { pool: db, lnd: lnd })
-//         .await
-// }
 
 /// Calls the API through an API-scoped paywall
 #[rocket::post("/payable", data = "<request>")]

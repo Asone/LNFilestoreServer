@@ -51,13 +51,8 @@ impl Mutation {
         }
     }
 
-
     /// Changes password for current user
-    async fn change_password<'a>(
-        context: &'a GQLContext,
-        password: String
-    ) ->  FieldResult<bool> {
-
+    async fn change_password<'a>(context: &'a GQLContext, password: String) -> FieldResult<bool> {
         if Self::is_authenticated(&context.user) == false {
             return Err(FieldError::new(
                 "You need to be authenticated to activate this mutation",
@@ -67,12 +62,13 @@ impl Mutation {
 
         let user = context.get_user().to_owned().unwrap();
         let connection = context.get_db_connection();
-        let result = connection.run(move |c| User::change_password(user.uuid, password, c)).await;
+        let result = connection
+            .run(move |c| User::change_password(user.uuid, password, c))
+            .await;
 
         match result {
             Ok(_) => Ok(true),
-            Err(_) => Ok(false)
+            Err(_) => Ok(false),
         }
-        
     }
 }

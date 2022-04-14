@@ -15,7 +15,7 @@ use diesel::prelude::*;
 #[table_name = "session"]
 #[belongs_to(parent = User, foreign_key = "user")]
 pub struct UserSession {
-    uuid: Uuid,
+    pub uuid: Uuid,
     pub token: String,
     pub user_uuid: Uuid,
     pub created_at: NaiveDateTime,
@@ -25,15 +25,13 @@ pub struct UserSession {
 #[derive(Debug, Insertable, Queryable)]
 #[table_name = "session"]
 pub struct NewUserSession {
-    uuid: Uuid,
+    pub uuid: Uuid,
     pub token: String,
     pub user_uuid: Uuid,
     pub expires_at: NaiveDateTime,
 }
 
-impl NewUserSession {
-
-}
+impl NewUserSession {}
 
 impl From<(String, User)> for NewUserSession {
     fn from(data: (String, User)) -> Self {
@@ -66,17 +64,20 @@ impl UserSession {
         }
     }
 
-    pub fn update_session_expiry(current_session: UserSession, connection: &PgConnection) -> Result<UserSession, ()>{
-           use crate::db::schema::session::dsl::*;
+    pub fn update_session_expiry(
+        session_uuid: uuid::Uuid,
+        connection: &PgConnection,
+    ) -> Result<UserSession, ()> {
+        use crate::db::schema::session::dsl::*;
 
-            let result = diesel::update(session.filter(uuid.eq(current_session.uuid)))
+        let result = diesel::update(session.filter(uuid.eq(session_uuid)))
             .set(expires_at.eq(Self::expiry_generator(None)))
             .get_result::<UserSession>(connection);
 
-            match result {
-                Ok(result) => Ok(result),
-                Err(_) => Err(())
-            }
+        match result {
+            Ok(result) => Ok(result),
+            Err(_) => Err(()),
+        }
     }
 
     fn expiry_generator(minutes_duration: Option<i64>) -> DateTime<Utc> {

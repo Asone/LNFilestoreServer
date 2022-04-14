@@ -1,7 +1,7 @@
 pub use crate::db::schema::session;
 use crate::db::schema::user;
-use bcrypt::DEFAULT_COST;
 use bcrypt::hash;
+use bcrypt::DEFAULT_COST;
 use chrono::NaiveDateTime;
 use diesel::prelude::*;
 use diesel::PgConnection;
@@ -22,7 +22,6 @@ pub struct User {
 }
 
 impl User {
-
     /// Finds a user based on its login
     pub fn find_one_by_username(username: String, connection: &PgConnection) -> Option<User> {
         use crate::db::schema::user::dsl::*;
@@ -42,7 +41,11 @@ impl User {
             .unwrap()
     }
 
-    pub fn change_password(user_uuid: uuid::Uuid, new_password: String, connection: &PgConnection) -> QueryResult<User> {
+    pub fn change_password(
+        user_uuid: uuid::Uuid,
+        new_password: String,
+        connection: &PgConnection,
+    ) -> QueryResult<User> {
         use crate::db::schema::user::dsl::*;
         let hashed_password = hash(new_password, DEFAULT_COST).unwrap();
 

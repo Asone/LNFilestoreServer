@@ -1,4 +1,3 @@
-
 /// This should provide a generic Input type for payable
 /// data.
 /// The input should expect an optional `payment` field

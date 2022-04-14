@@ -9,6 +9,7 @@ use super::session::UserSession;
 /// Represents a user token
 #[derive(Debug, Serialize, Deserialize)]
 pub struct UserToken {
+    pub uuid: uuid::Uuid,
     // issued at
     pub iat: i64,
     // expiration
@@ -19,7 +20,6 @@ pub struct UserToken {
 }
 
 impl UserToken {
-
     /// Encodes the UserToken object to a JWT Token
     pub fn generate_token(
         user_session: UserSession,
@@ -38,6 +38,7 @@ impl UserToken {
 impl From<UserSession> for UserToken {
     fn from(user_session: UserSession) -> Self {
         Self {
+            uuid: user_session.uuid,
             iat: Utc::now().timestamp(),
             exp: user_session.expires_at.timestamp(),
             user: user_session.user_uuid.to_string(),

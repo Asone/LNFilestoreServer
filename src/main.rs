@@ -26,15 +26,15 @@ use dotenv::dotenv;
 use juniper::EmptySubscription;
 use rocket::Rocket;
 
-use catchers::payment_required::payment_required;
-use cors::Cors;
-use graphql::{ context::GQLContext, mutation::Mutation, query::Query };
+use crate::db::PostgresConn;
 use app::Schema;
 use app::{
     get_graphql_handler, graphiql, login, options_handler, payable_post_graphql_handler,
     post_graphql_handler,
 };
-use crate::db::PostgresConn;
+use catchers::payment_required::payment_required;
+use cors::Cors;
+use graphql::{context::GQLContext, mutation::Mutation, query::Query};
 
 itconfig::config! {
     DATABASE_URL: String,
