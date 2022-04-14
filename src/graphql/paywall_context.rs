@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use crate::{db::PostgresConn, lnd::client::LndClient};
 
 use derive_more::Deref;

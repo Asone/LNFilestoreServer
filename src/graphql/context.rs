@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{db::PostgresConn, lnd::client::LndClient};
+use crate::{db::{PostgresConn, models::user::User}, lnd::client::LndClient};
 
 use derive_more::Deref;
 use juniper_rocket_multipart_handler::temp_file::TempFile;
@@ -21,6 +21,7 @@ pub struct GQLContext {
     pub pool: PostgresConn,
     pub lnd: LndClient,
     pub files: Option<HashMap<String, TempFile>>,
+    pub user: Option<User>,
 }
 
 impl juniper::Context for GQLContext {}
@@ -47,5 +48,10 @@ impl GQLContext {
 
     pub fn get_files(&self) -> &Option<HashMap<String, TempFile>> {
         return &self.files;
+    }
+
+    /// Provides the instance of optional user
+    pub fn get_user(&self) -> &Option<User> {
+        return &self.user;
     }
 }

@@ -1,3 +1,5 @@
+#![allow(deprecated)]
+
 use crate::db::models::Post;
 use chrono::{Duration, NaiveDateTime, Utc};
 use std::env;

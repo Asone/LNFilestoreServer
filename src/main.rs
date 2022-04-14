@@ -18,10 +18,12 @@ mod app;
 mod catchers;
 mod cors;
 mod db;
+mod errors;
+mod forms;
 mod graphql;
+mod guards;
 mod lnd;
-mod requests;
-use catchers::payment_required::payment_required;
+
 use dotenv::dotenv;
 use juniper::EmptySubscription;
 use rocket::{
@@ -29,21 +31,19 @@ use rocket::{
     Rocket,
 };
 
-use crate::{
-    app::Schema,
-    cors::Cors,
-    graphql::context::GQLContext,
-    graphql::{mutation::Mutation, query::Query},
-};
-
-use crate::app::{
-    get_graphql_handler, graphiql, options_handler, payable_post_graphql_handler,
-    post_graphql_handler, upload,
-};
 use crate::db::PostgresConn;
+use app::Schema;
+use app::{
+    get_graphql_handler, graphiql, login, options_handler, payable_post_graphql_handler,
+    post_graphql_handler, upload
+};
+use catchers::payment_required::payment_required;
+use cors::Cors;
+use graphql::{context::GQLContext, mutation::Mutation, query::Query};
 
 itconfig::config! {
     DATABASE_URL: String,
+    JWT_TOKEN_SECRET: String
 
     ROCKET {
         static BASE_URL: String => "/",
@@ -53,6 +53,7 @@ itconfig::config! {
 #[rocket::main]
 async fn main() {
     dotenv().ok();
+    config::init();
 
     let figment = Figment::from(rocket::Config::default());
     // .merge(("limits", Limits::new().limit("json", 16.mebibytes())));
@@ -73,7 +74,8 @@ async fn main() {
                 get_graphql_handler,
                 post_graphql_handler,
                 payable_post_graphql_handler,
-                upload
+                upload,
+                login
             ],
         )
         .attach(Cors)
