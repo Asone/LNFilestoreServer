@@ -1,7 +1,10 @@
-use crate::{db::PostgresConn, lnd::client::LndClient};
+use crate::{
+    db::{models::user::User, PostgresConn},
+    lnd::client::LndClient,
+};
 
 use derive_more::Deref;
-use tonic::{codegen::InterceptedService, transport::Channel};
+use tonic::codegen::InterceptedService;
 use tonic_lnd::{rpc::lightning_client::LightningClient, MacaroonInterceptor};
 
 /*
@@ -17,6 +20,7 @@ pub struct GQLContext {
     #[deref]
     pub pool: PostgresConn,
     pub lnd: LndClient,
+    pub user: Option<User>,
 }
 
 impl juniper::Context for GQLContext {}
@@ -39,5 +43,10 @@ impl GQLContext {
     // Provides the instance of DB pool
     pub fn get_db_connection(&self) -> &PostgresConn {
         return &self.pool;
+    }
+
+    /// Provides the instance of optional user
+    pub fn get_user(&self) -> &Option<User> {
+        return &self.user;
     }
 }

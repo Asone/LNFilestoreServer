@@ -1,12 +1,13 @@
+#![allow(deprecated)]
+
 use crate::db::models::Post;
 use chrono::{Duration, NaiveDateTime, Utc};
+use std::env;
 use tonic::codegen::InterceptedService;
-use tonic::transport::Channel;
 use tonic::{Code, Status};
 use tonic_lnd::rpc::lightning_client::LightningClient;
 use tonic_lnd::rpc::{Invoice, PaymentHash};
 use tonic_lnd::MacaroonInterceptor;
-use std::env;
 
 use lightning_invoice::*;
 extern crate dotenv;
@@ -19,9 +20,9 @@ pub struct InvoiceParams {
 
 impl InvoiceParams {
     pub fn new(value: Option<i64>, memo: Option<String>, expiry: Option<i64>) -> Self {
-        
         let default_value = env::var("DEFAULT_INVOICE_VALUE").unwrap_or("100".to_string());
-        let default_expiry = env::var("DEFAULT_INVOICE_EXPIRY").unwrap_or("API Payment".to_string());
+        let default_expiry =
+            env::var("DEFAULT_INVOICE_EXPIRY").unwrap_or("API Payment".to_string());
         let default_memo = env::var("DEFAULT_INVOICE_MEMO").unwrap_or("600".to_string());
 
         Self {
@@ -87,7 +88,7 @@ impl InvoiceUtils {
             Some(post.price as i64),
             // Memo content should be handle with an env var pattern
             Some(format!("buy {} : {}", post.uuid, post.title).to_string()),
-            None
+            None,
         );
         // Request invoice generation to the LN Server
         InvoiceUtils::generate_invoice(lnd_client, params).await
