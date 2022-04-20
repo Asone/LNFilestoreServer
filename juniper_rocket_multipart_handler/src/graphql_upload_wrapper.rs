@@ -4,6 +4,7 @@ use rocket::{
     form::Error,
     http::{ContentType, Status},
     outcome::Outcome::{Failure, Forward, Success},
+    route::Outcome,
     Data, Request,
 };
 use std::sync::Arc;
@@ -18,6 +19,7 @@ use crate::graphql_upload_operations_request::GraphQLOperationsRequest;
 
 use crate::temp_file::TempFile;
 
+pub struct FilesMap {}
 // This shall be deferable to env
 const BODY_LIMIT: u64 = 1024 * 100;
 
@@ -128,13 +130,18 @@ where
        Body reader for application/json content type.
        This method replicates the original handler from juniper_rocket
     */
-    fn from_json_body<'r>(data: Data<'r>) -> Result<GraphQLBatchRequest<S>, serde_json::Error> {
-        let body = String::new();
-        let mut _reader = data.open(BODY_LIMIT.bytes());
+    async fn from_json_body<'r>(data: Data<'r>) -> Result<GraphQLBatchRequest<S>, Outcome<'r>> {
+        use rocket::tokio::io::AsyncReadExt as _;
 
-        match serde_json::from_str(&body) {
-            Ok(req) => Ok(req),
-            Err(e) => Err(e),
+        let mut reader = data.open(BODY_LIMIT.bytes());
+        let mut body = String::new();
+        let reader_result = reader.read_to_string(&mut body).await;
+        match reader_result {
+            Ok(_) => match serde_json::from_str(&body) {
+                Ok(req) => Ok(req),
+                Err(e) => Err(Failure(Status::BadRequest)),
+            },
+            Err(e) => Err(Failure(Status::BadRequest)),
         }
     }
 
@@ -158,6 +165,7 @@ where
     ) -> Result<(GraphQLBatchRequest<S>, Option<HashMap<String, TempFile>>), Error<'r>> {
         // Builds a void query for development
         let mut query: String = String::new();
+        let mut map: String = String::new();
         let boundary = Self::get_boundary(content_type).unwrap();
 
         // Create and read a datastream from the request body
@@ -193,7 +201,7 @@ where
                         Err(_) => Bytes::new(),
                     };
 
-                    let tmpfile = TempFile {
+                    let mut tmpfile = TempFile {
                         name: file_name,
                         size: Some(content.len()),
                         local_path: PathBuf::from(&path),
@@ -211,7 +219,12 @@ where
                         Ok(result) => {
                             if name.as_str() == "operations" {
                                 query = result;
+                                continue;
                             }
+
+                            // if name.as_str() == "map" {
+                            //     map = result;
+                            // }
                         }
                         Err(_) => continue,
                     };
@@ -269,12 +282,12 @@ where
         match Self::get_processor_type(content_type) {
             ProcessorType::JSON => {
                 Box::pin(async move {
-                    match Self::from_json_body(data) {
+                    match Self::from_json_body(data).await {
                         Ok(result) => Success(GraphQLUploadWrapper {
                             operations: GraphQLOperationsRequest(result),
                             files: None,
                         }),
-                        Err(error) => Failure((Status::BadRequest, format!("{}", error))),
+                        Err(e) => Failure((Status::BadRequest, format!("{}", ""))),
                     }
                     // Success(Self {})
                 })

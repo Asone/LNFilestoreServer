@@ -1,6 +1,7 @@
-use std::{fs::File, io::Write, path::PathBuf};
-
 use multer::bytes::Bytes;
+use std::fs;
+use std::io::Error;
+use std::{fs::File, io::Write, path::PathBuf};
 
 /// A buffered file from file upload.
 ///
@@ -15,7 +16,7 @@ use multer::bytes::Bytes;
 /// `local_path` of the struct.
 ///
 /// default `local_path` provided is based on [`env::temp_dir()`](https://doc.rust-lang.org/nightly/std/env/fn.temp_dir.html) value
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct TempFile {
     pub local_path: PathBuf,
     pub name: String,
@@ -50,11 +51,47 @@ impl TempFile {
         &self.content
     }
 
+    fn path_checker(path: &str) -> Result<(), Error> {
+        fs::create_dir_all(path)
+    }
+
     /// Persists the file to the local_path property
-    pub fn persist_file(&self) -> &PathBuf {
+    pub fn persist_file(&self) -> Result<&PathBuf, Error> {
         let full_path = format!("{}/{}", &self.local_path.to_str().unwrap(), &self.name);
-        let mut file = File::create(full_path).unwrap();
-        file.write_all(&self.content).unwrap();
-        &self.local_path
+        let file = File::create(full_path);
+
+        match file {
+            Ok(mut file) => {
+                let result = file.write_all(&self.content);
+                match result {
+                    Ok(_) => Ok(&self.local_path),
+                    Err(error) => Err(error),
+                }
+            }
+            Err(error) => Err(error),
+        }
+    }
+
+    /// persists file to a given location
+    pub fn persist_to(&self, path: &str) -> Result<PathBuf, Error> {
+        match Self::path_checker(path) {
+            Ok(_) => {
+                let full_path = format!("{}/{}", path, &self.name);
+                let path_buf = PathBuf::from(&full_path);
+                let file = File::create(&full_path);
+
+                match file {
+                    Ok(mut file) => {
+                        let result = file.write_all(&self.content);
+                        match result {
+                            Ok(_) => Ok(path_buf),
+                            Err(error) => Err(error),
+                        }
+                    }
+                    Err(error) => Err(error),
+                }
+            }
+            Err(error) => Err(error),
+        }
     }
 }
