@@ -1,6 +1,6 @@
 use multer::{bytes::Bytes, Multipart};
 use rocket::{
-    data::{self, FromData, ToByteUnit},
+    data::{self, ByteUnit, FromData, ToByteUnit},
     form::Error,
     http::{ContentType, Status},
     outcome::Outcome::{Failure, Forward, Success},
@@ -19,7 +19,6 @@ use crate::graphql_upload_operations_request::GraphQLOperationsRequest;
 
 use crate::temp_file::TempFile;
 
-pub struct FilesMap {}
 // This shall be deferable to env
 const BODY_LIMIT: u64 = 1024 * 100;
 
@@ -122,14 +121,13 @@ impl<S> GraphQLUploadWrapper<S>
 where
     S: ScalarValue,
 {
+    // Retrieves files
     pub async fn get_files(&self) -> &Option<HashMap<String, TempFile>> {
         &self.files
     }
 
-    /**
-       Body reader for application/json content type.
-       This method replicates the original handler from juniper_rocket
-    */
+    //   Body reader for application/json content type.
+    //   This method replicates the original handler from juniper_rocket
     async fn from_json_body<'r>(data: Data<'r>) -> Result<GraphQLBatchRequest<S>, Outcome<'r>> {
         use rocket::tokio::io::AsyncReadExt as _;
 
@@ -145,23 +143,27 @@ where
         }
     }
 
-    /**
-       Body reader for application/graphql content type.
-       This method replicates the original handler from juniper_rocket
-    */
-    fn from_graphql_body<'r>(data: Data<'r>) -> Result<GraphQLBatchRequest<S>, Error> {
-        let body = String::new();
-        let mut _reader = data.open(BODY_LIMIT.bytes());
+    //   Body reader for application/graphql content type.
+    //   This method replicates the original handler from juniper_rocket
+    async fn from_graphql_body<'r>(data: Data<'r>) -> Result<GraphQLBatchRequest<S>, Outcome<'r>> {
+        use rocket::tokio::io::AsyncReadExt as _;
 
-        Ok(GraphQLBatchRequest::Single(http::GraphQLRequest::new(
-            body, None, None,
-        )))
+        let mut reader = data.open(BODY_LIMIT.bytes());
+        let mut body = String::new();
+        let reader_result = reader.read_to_string(&mut body).await;
+        match reader_result {
+            Ok(_) => Ok(GraphQLBatchRequest::Single(http::GraphQLRequest::new(
+                body, None, None,
+            ))),
+            Err(e) => Err(Failure(Status::BadRequest)),
+        }
     }
 
     /// Body reader for multipart/form-data content type.
     async fn from_multipart_body<'r>(
         data: Data<'r>,
         content_type: &ContentType,
+        file_limit: ByteUnit,
     ) -> Result<(GraphQLBatchRequest<S>, Option<HashMap<String, TempFile>>), Error<'r>> {
         // Builds a void query for development
         let mut query: String = String::new();
@@ -169,7 +171,7 @@ where
         let boundary = Self::get_boundary(content_type).unwrap();
 
         // Create and read a datastream from the request body
-        let reader = data.open(BODY_LIMIT.bytes());
+        let reader = data.open(file_limit);
         let stream = tokio_util::io::ReaderStream::new(reader);
 
         // Create a multipart object based on multer
@@ -263,13 +265,14 @@ where
     }
 }
 
+struct Config {}
+
 #[rocket::async_trait]
 impl<'r, S> FromData<'r> for GraphQLUploadWrapper<S>
 where
     S: ScalarValue,
 {
     type Error = String;
-
     async fn from_data(
         req: &'r Request<'_>,
         data: Data<'r>,
@@ -287,7 +290,7 @@ where
                             operations: GraphQLOperationsRequest(result),
                             files: None,
                         }),
-                        Err(e) => Failure((Status::BadRequest, format!("{}", ""))),
+                        Err(error) => Failure((Status::BadRequest, format!("{}", error))),
                     }
                     // Success(Self {})
                 })
@@ -295,7 +298,7 @@ where
             }
             ProcessorType::GRAPHQL => {
                 Box::pin(async move {
-                    match Self::from_graphql_body(data) {
+                    match Self::from_graphql_body(data).await {
                         Ok(result) => Success(GraphQLUploadWrapper {
                             operations: GraphQLOperationsRequest(result),
                             files: None,
@@ -307,7 +310,13 @@ where
             }
             ProcessorType::MULTIPART => {
                 Box::pin(async move {
-                    match Self::from_multipart_body(data, content_type).await {
+                    match Self::from_multipart_body(
+                        data,
+                        content_type,
+                        req.limits().get("data-form").unwrap(),
+                    )
+                    .await
+                    {
                         Ok(result) => Success(GraphQLUploadWrapper {
                             operations: GraphQLOperationsRequest(result.0),
                             files: result.1,
