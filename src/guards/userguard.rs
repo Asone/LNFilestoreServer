@@ -47,14 +47,14 @@ impl<'r> FromRequest<'r> for UserGuard {
 
     async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
         let authorization = request.headers().get_one("Authorization");
-
-        match authorization {
-            Some(authorization) => {
-                let formated_token = Self::format_bearer(authorization);
+        let session = request.cookies().get("session");
+        match session {
+            Some(session) => {
+                // let formated_token = Self::format_bearer(authorization);
                 let secret = Self::get_secret().unwrap();
 
                 let token = jsonwebtoken::decode::<UserToken>(
-                    formated_token.as_str(),
+                    session.value(),
                     &DecodingKey::from_secret(secret.as_ref()),
                     &Validation::new(Algorithm::HS256),
                 );

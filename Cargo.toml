@@ -7,9 +7,9 @@ edition = "2018"
 
 [dependencies]
 futures = "0.3.1"
-rocket = "0.5.0-rc.1"
-juniper = "0.15.7"
-juniper_rocket = "0.8.0"
+rocket = { version = "0.5.0-rc.2", features = ["tls"] }
+juniper = "0.15.9"
+juniper_rocket = "0.8.2"
 diesel = { version = "1.4.7", features = ["postgres","r2d2","chrono","uuidv07"] }
 dotenv = "0.15.0"
 chrono = { version = "0.4.19", features = ["serde"] }
@@ -24,11 +24,20 @@ serde = "1.0.136"
 serde_json = "1.0.68"
 lightning-invoice = "0.14.0"
 diesel_migrations = "1.4.0"
+rocket-multipart-form-data = "0.10.3"
 uuid = { version = "0.8.2", features = ["serde", "v4"] }
+multer = "2.0.2"
 jsonwebtoken = "8.0.1"
 regex = "1.5.5" 
-bcrypt = "0.12"
+bcrypt = "0.13.0"
+juniper_rocket_multipart_handler = "0.1.0"
+infer = "0.8.1"
+
+[dependencies.tokio-util]
+version = "0.7.1"
+
 [dependencies.rocket_sync_db_pools]
-version = "0.1.0-rc.1"
+version = "0.1.0-rc.2"
 
 features = ["diesel_postgres_pool"]
+

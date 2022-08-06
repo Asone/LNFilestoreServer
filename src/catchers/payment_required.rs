@@ -1,7 +1,7 @@
 use crate::db::models::api_payment::ApiPayment;
 use crate::db::PostgresConn;
 use crate::lnd::client::LndClient;
-use rocket::response::content::Json;
+use rocket::response::content::RawJson;
 use rocket::response::status;
 use rocket::{catch, http::Status, Request};
 
@@ -13,7 +13,7 @@ use rocket::{catch, http::Status, Request};
 pub async fn payment_required<'r>(
     _: Status,
     request: &'r Request<'_>,
-) -> Result<status::Custom<Json<String>>, Status> {
+) -> Result<status::Custom<RawJson<String>>, Status> {
     let pool = request.guard::<PostgresConn>().await.succeeded();
     let lnd_client_result = request.guard::<LndClient>().await.succeeded();
 
@@ -31,7 +31,7 @@ pub async fn payment_required<'r>(
                         Ok(payment_request) => {
                             let json_state =
                                 format!(r#"{{"payment": {:?}}}"#, payment_request.request.as_str());
-                            Ok(status::Custom(Status::PaymentRequired, Json(json_state)))
+                            Ok(status::Custom(Status::PaymentRequired, RawJson(json_state)))
                         }
                         Err(_) => Err(Status::InternalServerError),
                     }
