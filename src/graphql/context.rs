@@ -1,10 +1,14 @@
 use std::collections::HashMap;
 
-use crate::{db::{PostgresConn, models::user::User}, lnd::client::LndClient};
+use crate::{
+    db::{models::user::User, PostgresConn},
+    lnd::client::LndClient,
+};
 
 use derive_more::Deref;
 use juniper_rocket_multipart_handler::temp_file::TempFile;
-use tonic::codegen::InterceptedService;
+// use tonic::codegen::InterceptedService;
+use tonic_lnd::tonic::codegen::InterceptedService;
 use tonic_lnd::{rpc::lightning_client::LightningClient, MacaroonInterceptor};
 
 /*
@@ -22,6 +26,7 @@ pub struct GQLContext {
     pub lnd: LndClient,
     pub files: Option<HashMap<String, TempFile>>,
     pub user: Option<User>,
+    pub server_config: Option<String>,
 }
 
 impl juniper::Context for GQLContext {}

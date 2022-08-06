@@ -3,10 +3,12 @@
 use crate::db::models::Post;
 use chrono::{Duration, NaiveDateTime, Utc};
 use std::env;
-use tonic::codegen::InterceptedService;
+use tonic_lnd::rpc::invoice::InvoiceState;
+// use tonic::codegen::InterceptedService;
 use tonic::{Code, Status};
 use tonic_lnd::rpc::lightning_client::LightningClient;
 use tonic_lnd::rpc::{Invoice, PaymentHash};
+use tonic_lnd::tonic::codegen::InterceptedService;
 use tonic_lnd::MacaroonInterceptor;
 
 use lightning_invoice::*;
@@ -21,9 +23,8 @@ pub struct InvoiceParams {
 impl InvoiceParams {
     pub fn new(value: Option<i64>, memo: Option<String>, expiry: Option<i64>) -> Self {
         let default_value = env::var("DEFAULT_INVOICE_VALUE").unwrap_or("100".to_string());
-        let default_expiry =
-            env::var("DEFAULT_INVOICE_EXPIRY").unwrap_or("API Payment".to_string());
-        let default_memo = env::var("DEFAULT_INVOICE_MEMO").unwrap_or("600".to_string());
+        let default_expiry = env::var("DEFAULT_INVOICE_EXPIRY").unwrap_or("600".to_string());
+        let default_memo = env::var("DEFAULT_INVOICE_MEMO").unwrap_or("API Payment".to_string());
 
         Self {
             value: value.unwrap_or_else(|| default_value.parse::<i64>().unwrap()),
@@ -45,6 +46,7 @@ pub struct LndInvoice {
     pub value: i64,
     pub r_hash: String,
     pub expires_at: NaiveDateTime,
+    pub state: InvoiceState,
 }
 
 impl LndInvoice {
@@ -55,12 +57,15 @@ impl LndInvoice {
         let expires_at = Utc::now()
             .checked_add_signed(Duration::seconds(invoice.expiry))
             .unwrap();
+        let state = invoice.state();
+
         Self {
             payment_request: invoice.payment_request,
             memo: invoice.memo,
             value: invoice.value as i64,
             r_hash: r_hash,
             expires_at: expires_at.naive_utc(),
+            state: state,
         }
     }
 }
@@ -128,12 +133,58 @@ impl InvoiceUtils {
         LndInvoice::new(invoice, hex::encode(result.r_hash))
     }
 
-    /*
-        Gets the invoice state from a payment request string.
-        It consists as a two steps method.
+    // pub async fn state_invoice<'a>(
+    //     lnd_client: &LightningClient<
+    //         InterceptedService<tonic::transport::Channel, MacaroonInterceptor>,
+    //     >,
+    //     payment_request: String) -> Result<Invoice, Status> {
+    //         let mut client = lnd_client.clone();
 
-        First it registers an invoice
-    */
+    //         // Parse the payment request
+    //         let invoice = payment_request
+    //             .as_str()
+    //             .parse::<SignedRawInvoice>()
+    //             .unwrap();
+
+    //         // Get the payment hash
+    //         let p_hash = invoice.payment_hash().unwrap();
+
+    //         /*
+    //             The below instruction might seems a bit odd.
+    //             the expected r_hash here is not the Invoice r_hash
+    //             but rather the r_hash of the payment request which is
+    //             denominated in the SignedRawInvoice as the payment_hash.
+    //         */
+    //         let request = tonic::Request::new(PaymentHash {
+    //             r_hash: p_hash.0.to_vec(),
+    //             ..PaymentHash::default()
+    //         });
+
+    //         match client.lookup_invoice(request).await {
+    //             Ok(response) => {
+    //                 match response.into_inner().state() {
+    //                     InvoiceState::Open => Err(Status::PaymentRequired),
+    //                     InvoiceState::Settled => Ok(Status::Ok),
+    //                     InvoiceState::Canceled => Err(Status::PaymentRequired),
+    //                     InvoiceState::Accepted => Err(Status::Accepted),
+    //                 }
+    //             } ,
+    //             Err(status) => {
+    //                 if status.code() == Code::Unknown
+    //                     && (status.message() == "there are no existing invoices"
+    //                         || status.message() == "unable to locate invoice")
+    //                 {
+    //                     Ok(None)
+    //                 } else {
+    //                     Err(status)
+    //                 }
+    //             }
+    //         }
+    //     }
+    // }
+
+    //    Gets the invoice state from a payment request string.
+    //    It consists as a two steps method.
     pub async fn get_invoice_state_from_payment_request<'a>(
         lnd_client: &LightningClient<
             InterceptedService<tonic::transport::Channel, MacaroonInterceptor>,

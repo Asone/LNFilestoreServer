@@ -6,3 +6,4 @@ target
 .env
 src/lnd/config/
 rocket.toml
+.DS_Store

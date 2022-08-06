@@ -2,7 +2,7 @@ use diesel::result::Error;
 use rocket::{
     http::Status,
     request::{FromRequest, Outcome},
-    Request
+    Request,
 };
 
 use tonic_lnd::rpc::invoice::InvoiceState;
