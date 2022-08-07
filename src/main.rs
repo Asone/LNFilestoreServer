@@ -33,7 +33,7 @@ use db::igniter::run_db_migrations;
 use dotenv::dotenv;
 use juniper::EmptySubscription;
 use rocket::fairing::AdHoc;
-use rocket::{Build, Rocket};
+use rocket::{Rocket};
 use routes::{auth::login, file::get_file, utils::graphiql};
 
 use app::{
