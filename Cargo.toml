@@ -8,7 +8,7 @@ edition = "2018"
 [dependencies]
 futures = "0.3.1"
 rocket = { version = "0.5.0-rc.2", features = ["tls"] }
-juniper = "0.15.9"
+juniper = "0.15.10"
 juniper_rocket = "0.8.2"
 diesel = { version = "1.4.7", features = ["postgres","r2d2","chrono","uuidv07"] }
 dotenv = "0.15.0"

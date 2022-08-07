@@ -18,13 +18,6 @@ use crate::db::{
 pub struct UserGuard(pub Option<User>);
 
 impl UserGuard {
-    /// Checks that the authorization header includes Bearer mention
-    /// Returns the token without the bearer prefix
-    pub fn format_bearer(authorization: &str) -> String {
-        let re = regex::Regex::new("^[bB]earer ").unwrap();
-        re.replace(authorization, "").to_string()
-    }
-
     /// Retrieves the secret env
     fn get_secret() -> Result<String, ()> {
         let secret = env::var("JWT_TOKEN_SECRET");
@@ -46,7 +39,6 @@ impl<'r> FromRequest<'r> for UserGuard {
     type Error = ();
 
     async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
-        let authorization = request.headers().get_one("Authorization");
         let session = request.cookies().get("session");
         match session {
             Some(session) => {
