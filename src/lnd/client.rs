@@ -24,27 +24,34 @@ impl<'r> FromRequest<'r> for LndClient {
         let address = env::var("LND_ADDRESS");
 
         if address.is_err() {
+            println!("missing address for lnd");
             return Outcome::Failure((Status::ServiceUnavailable, ()));
         }
+
+        let address = address.unwrap();
 
         let cert_file = env::var("LND_CERTFILE_PATH");
 
         if cert_file.is_err() {
+            println!("cert failure for lnd");
             return Outcome::Failure((Status::ServiceUnavailable, ()));
         }
 
         let macaroon_file = env::var("LND_MACAROON_PATH");
 
         if macaroon_file.is_err() {
+            println!("macaroon failure");
             return Outcome::Failure((Status::ServiceUnavailable, ()));
         }
 
-        let client =
-            tonic_lnd::connect(address.unwrap(), cert_file.unwrap(), macaroon_file.unwrap()).await;
+        let client = tonic_lnd::connect(address, cert_file.unwrap(), macaroon_file.unwrap()).await;
 
         match client {
             Ok(result) => Outcome::Success(LndClient(result)),
-            Err(_e) => Outcome::Failure((Status::ServiceUnavailable, ())),
+            Err(e) => {
+                println!("Error while connecting to LND server");
+                Outcome::Failure((Status::ServiceUnavailable, ()))
+            }
         }
     }
 }

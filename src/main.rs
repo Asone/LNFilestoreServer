@@ -25,6 +25,7 @@ mod forms;
 mod graphql;
 mod guards;
 mod lnd;
+mod responders;
 mod routes;
 
 use crate::db::PostgresConn;
@@ -33,7 +34,7 @@ use db::igniter::run_db_migrations;
 use dotenv::dotenv;
 use juniper::EmptySubscription;
 use rocket::fairing::AdHoc;
-use rocket::{Rocket};
+use rocket::Rocket;
 use routes::{auth::login, file::get_file, utils::graphiql};
 
 use app::{

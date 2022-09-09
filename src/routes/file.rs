@@ -1,6 +1,8 @@
+use std::path::Path;
+
 use rocket::{
     fs::NamedFile,
-    http::Status,
+    http::{Header, Status},
     response::{content::RawJson, status},
 };
 use tonic::{codegen::InterceptedService, transport::Channel};
@@ -22,6 +24,7 @@ use crate::{
         client::LndClient,
         invoice::{InvoiceParams, InvoiceUtils},
     },
+    responders::download::DownloadResponder,
 };
 
 #[derive(Debug)]
@@ -41,7 +44,7 @@ pub async fn get_file(
     invoice: Option<String>,
     db: PostgresConn,
     lnd: LndClient,
-) -> Result<NamedFile, status::Custom<Option<RawJson<String>>>> {
+) -> Result<DownloadResponder, status::Custom<Option<RawJson<String>>>> {
     // Calls the get_media to try to retrieve the requested media from database
     let media = get_media(&uuid, &db).await;
 
@@ -61,7 +64,7 @@ pub async fn get_file(
 
     // If the media exists and is free we should deliver it to the user without performing any further operation
     if media.price == 0 {
-        return Ok(NamedFile::open(media.absolute_path).await.unwrap());
+        return set_download_responder(media).await;
     }
 
     // Otherwise we ensure try to retrieve an associated payment to the requested media.
@@ -106,7 +109,7 @@ pub async fn get_file(
     let invoice = invoice.unwrap();
 
     match invoice.state() {
-        InvoiceState::Settled => Ok(NamedFile::open(media.absolute_path).await.unwrap()),
+        InvoiceState::Settled => set_download_responder(media).await,
         InvoiceState::Accepted => Err(status::Custom(Status::NotFound, None)),
         InvoiceState::Canceled => {
             let invoice = request_new_media_payment(&media, lnd, db).await;
@@ -230,5 +233,24 @@ async fn get_invoice(
             None => Err(FileHandlingError::InvoiceNotFound),
         },
         Err(_) => Err(FileHandlingError::LNFailure),
+    }
+}
+
+async fn set_download_responder(
+    media: Media,
+) -> Result<DownloadResponder, status::Custom<Option<RawJson<String>>>> {
+    let path = Path::new(&media.absolute_path);
+    let filename = path.file_name();
+
+    match filename {
+        Some(filename) => {
+            let disposition_value =
+                format!(r#"attachment; filename="{}""#, filename.to_str().unwrap());
+            Ok(DownloadResponder {
+                inner: NamedFile::open(path).await.unwrap(),
+                disposition: Header::new("Content-Disposition", disposition_value),
+            })
+        }
+        None => Err(status::Custom(Status::InternalServerError, None)),
     }
 }
