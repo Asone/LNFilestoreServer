@@ -5,7 +5,10 @@ main_db = { url = "postgres://<user>:<password>@<host>/<db_name>"}
  [default.limits]
 data-form = "32 MiB" 
 
-# Uncomment if you want to use SSL
+# Uncomment if you want to use SSL.
+# Ensure you add COOKIE_IS_SECURE env 
+# var for browser
+
 #[default.tls]
 #certs = "ssl/cert.pem"    
 #key = "ssl/cert-key.pem"
