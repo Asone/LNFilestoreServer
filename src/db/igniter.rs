@@ -12,11 +12,11 @@ pub async fn run_db_migrations(rocket: Rocket<Build>) -> Result<Rocket<Build>, R
         .await
         .expect("Database connection");
 
-            
-            
-    let flag = env::var("DATABASE_RUN_MIGRATIONS_ON_IGNITE").unwrap_or("false".to_string()).parse::<bool>();
-    
-    // Skip 
+    let flag = env::var("DATABASE_RUN_MIGRATIONS_ON_IGNITE")
+        .unwrap_or("false".to_string())
+        .parse::<bool>();
+
+    // Skip
     if flag.is_err() || !flag.unwrap() {
         return Ok(rocket);
     }

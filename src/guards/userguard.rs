@@ -2,7 +2,7 @@ use std::env;
 
 extern crate dotenv;
 
-use jsonwebtoken::{errors::ErrorKind, Algorithm, DecodingKey, Validation};
+use jsonwebtoken::{Algorithm, DecodingKey, Validation};
 use rocket::{
     http::{Cookie, CookieJar, Status},
     request::{FromRequest, Outcome},
@@ -97,16 +97,7 @@ impl<'r> FromRequest<'r> for UserGuard {
                             None => Outcome::Failure((Status::InternalServerError, ())),
                         }
                     }
-                    Err(error) => {
-                        match error.kind() {
-                            ErrorKind::ExpiredSignature => {
-                                // If the session is expired we shouldn't return the user
-                                // however this shouldn't invalidate the request
-                                Outcome::Success(UserGuard(None))
-                            }
-                            _ => Outcome::Failure((Status::Unauthorized, ())),
-                        }
-                    }
+                    Err(_error) => Outcome::Success(UserGuard(None)),
                 }
             }
             None => Outcome::Success(UserGuard(None)),

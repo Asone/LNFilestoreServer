@@ -1,4 +1,4 @@
-use std::{fs::File};
+use std::fs::File;
 
 use crate::{
     db::models::{
@@ -31,7 +31,7 @@ pub struct MediaType {
     pub price: i32,
     pub published: bool,
     pub created_at: NaiveDateTime,
-    absolute_path: String
+    absolute_path: String,
 }
 
 impl From<Media> for MediaType {
@@ -48,8 +48,8 @@ impl From<Media> for MediaType {
     }
 }
 
-impl From<(Media,String)> for MediaType {
-    fn from(item: (Media,String)) -> Self {
+impl From<(Media, String)> for MediaType {
+    fn from(item: (Media, String)) -> Self {
         let media = item.0;
 
         Self {
@@ -59,7 +59,7 @@ impl From<(Media,String)> for MediaType {
             price: media.price,
             published: media.published,
             created_at: media.created_at,
-            absolute_path: media.absolute_path
+            absolute_path: media.absolute_path,
         }
     }
 }
@@ -141,12 +141,10 @@ impl MediaType {
 
         match kind {
             Ok(result) => match result {
-                Some(t) => {
-                    return Some(t.extension())
-                },
-                None => return None
+                Some(t) => return Some(t.extension()),
+                None => return None,
             },
-            Err(_) => return None
+            Err(_) => return None,
         }
     }
 
@@ -158,9 +156,8 @@ impl MediaType {
             Ok(file) => {
                 let size = file.metadata().unwrap().len().to_string();
                 Some(size.parse::<i32>().unwrap_or(0))
-            },
-            Err(_) => None
+            }
+            Err(_) => None,
         }
     }
-
 }

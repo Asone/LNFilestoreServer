@@ -5,11 +5,5 @@ main_db = { url = "postgres://<user>:<password>@<host>/<db_name>"}
  [default.limits]
 data-form = "32 MiB" 
 
-# Uncomment if you want to use SSL
-#[default.tls]
-#certs = "ssl/cert.pem"    
-#key = "ssl/cert-key.pem"
-
 [release]
 log_level="normal"
-secret_key = "hPRYyVRiMyxpw5sBB1XeCMN1kFsDCqKvBi2QJxBVHQk="

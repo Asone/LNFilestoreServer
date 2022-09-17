@@ -8,6 +8,8 @@ use crate::{
     forms::login_user::LoginUser,
 };
 
+use std::{env};
+
 /// Authentication route
 #[rocket::post("/auth", data = "<user_form>")]
 pub async fn login(
@@ -24,12 +26,24 @@ pub async fn login(
             let token = UserToken::generate_token(user_session).unwrap();
             let cookie = Cookie::build("session", token)
                 .same_site(SameSite::None)
-                .secure(true)
+                .secure(secure_cookie())
                 .finish();
 
             cookies.add(cookie);
             Status::Ok
         }
         Err(_) => Status::ExpectationFailed,
+    }
+}
+
+/// Secures cookie based on environment
+fn secure_cookie() -> bool {
+    let cookie_is_secure = env::var("COOKIES_IS_SECURE");
+
+    match cookie_is_secure {
+        Ok(value) => {
+            value.parse::<bool>().unwrap_or(false)
+        },
+        Err(_) => false
     }
 }
