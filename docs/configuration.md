@@ -1,20 +1,42 @@
-## Set-up the project
+# Configuration
 
-In order to be able to launch the project you need to set-up a few configurations. Once all set-up, you shall be able to launch the server with
+You can configure the server at runtime providing 
+the following environment variables.
 
-```
-cargo run
-```
+Some variables will be necessary to run the server. 
+Environment variables used at runtime are listed below :  
 
-You'll find then a [graphiQL](https://github.com/graphql/graphiql) interface on [http://localhost:8000](http://localhost:8000)
-### Configure Database connection
+| Key   |      Default value      | Required | 
+|----------|:--------------------:|---------:|
+| DATABASE_URL| |yes|
+| DB_PASSWORD|                    | yes      |
+| DB_USER| | yes |
+| DATABASE_RUN_MIGRATIONS_ON_IGNITE| true | no |
+| LND_ADDRESS|  | yes |
+| LND_CERTFILE_PATH|  | yes |
+| LND_MACAROON_PATH|  | yes |
+| PAYWALL_TXS_NAME_CONTENT| buy {} | no |
+| QUERY_PAYWALL_TIMER|800 | no |
+| QUERY_PAYWALL_DEFAULT_PRICE| 50 | no |
+| API_PAYWALL_TIMER| 1000 | no |
+| API_PAYWALL_PRICE| 1000 | no |
+| DEFAULT_INVOICE_VALUE| 250 | no |
+| DEFAULT_INVOICE_MEMO| Toto | no |
+| DEFAULT_INVOICE_EXPIRY| 300 | no |
+| MAX_FILE_SIZE| 30000 | no |
+| ROCKET_TEMP_DIR| tmp | no |
+| ROCKET_TLS| | no |
+| ROCKET_SECRET_KEY| | yes | 
+| COOKIES_IS_SECURE| false | no |
+| JWT_TOKEN_DURATION|1000 |
+| JWT_TOKEN_SECRET|secret | | yes |
+| CORS_ORIGIN_POLICY| * | no |
+| CORS_METHOD_POLICY|POST, GET, PATCH, OPTIONS | no |
+| CORS_HEADERS_POLICY|Content-Type,  Access-Control-Allow-Headers, Authorization, X-Requested-With | no |
+| CORS_CREDENTIALS_POLICY|true | no |
 
-The current project uses [postgres]() as database engine. 
-To set-up the connection copy the `rocket.toml.dist` file as `rocket.toml` and fill the connection URL as mentioned. 
 
-```
-main_db = { url = "postgres://<user>:<password>@<host>/<db_name>"}
-```
+Note that you can use the `.env.dist` file as a template for that.
 
 ### Configure diesel options
 
@@ -24,15 +46,13 @@ You need to create a `diesel.toml` file in the root folder to specify to diesel 
 
 The current project uses LND server to handle Lightning network.
 
-In a `.env` file in the root folder of the project, You'll need to provide :
+You'll need to provide :
 
 - `LND_ADDRESS` : The address to reach the LND server
 - `LND_CERTFILE_PATH` : the ssl certification file of your LND server
 -  `LND_MACAROON_PATH` : The macaroon that will allow the rocket server to connect to your LND server. 
 
 **Note that the current project requires a macaroon with at least invoice write/read access.**
-
-You can use the `.env.dist` file as a template for that.
 
 ```
 LND_ADDRESS="https://umbrel.local:10009"
