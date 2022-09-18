@@ -25,7 +25,7 @@ pub async fn login(
         Ok(user_session) => {
             let token = UserToken::generate_token(user_session).unwrap();
             let cookie = Cookie::build("session", token)
-                .same_site(SameSite::None)
+                .same_site(same_site_cookie())
                 .secure(secure_cookie())
                 .finish();
 
@@ -36,9 +36,25 @@ pub async fn login(
     }
 }
 
+fn same_site_cookie() -> SameSite {
+    let cookie_same_site_policy = env::var("COOKIES_SAME_SITE_POLICY");
+
+    match cookie_same_site_policy {
+        Ok(value) => {
+            match value.as_str(){
+                "lax" => SameSite::Lax,
+                "none" => SameSite::None,
+                "strict" => SameSite::Strict,
+                _ => SameSite::Lax
+            }
+        }
+        Err(_) => SameSite::Lax
+}
+
+}
 /// Secures cookie based on environment
 fn secure_cookie() -> bool {
-    let cookie_is_secure = env::var("COOKIES_IS_SECURE");
+    let cookie_is_secure = env::var("COOKIES_IS_SECURE_POLICY_POLICY");
 
     match cookie_is_secure {
         Ok(value) => {

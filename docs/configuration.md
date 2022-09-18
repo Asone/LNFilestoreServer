@@ -3,59 +3,137 @@
 You can configure the server at runtime providing 
 the following environment variables.
 
-Some variables will be necessary to run the server. 
-Environment variables used at runtime are listed below :  
+Some variables will be necessary to run the server.
 
-| Key   |      Default value      | Required | 
-|----------|:--------------------:|---------:|
-| DATABASE_URL| |yes|
-| DB_PASSWORD|                    | yes      |
-| DB_USER| | yes |
-| DATABASE_RUN_MIGRATIONS_ON_IGNITE| true | no |
-| LND_ADDRESS|  | yes |
-| LND_CERTFILE_PATH|  | yes |
-| LND_MACAROON_PATH|  | yes |
-| PAYWALL_TXS_NAME_CONTENT| buy {} | no |
-| QUERY_PAYWALL_TIMER|800 | no |
-| QUERY_PAYWALL_DEFAULT_PRICE| 50 | no |
-| API_PAYWALL_TIMER| 1000 | no |
-| API_PAYWALL_PRICE| 1000 | no |
-| DEFAULT_INVOICE_VALUE| 250 | no |
-| DEFAULT_INVOICE_MEMO| Toto | no |
-| DEFAULT_INVOICE_EXPIRY| 300 | no |
-| MAX_FILE_SIZE| 30000 | no |
-| ROCKET_TEMP_DIR| tmp | no |
-| ROCKET_TLS| | no |
-| ROCKET_SECRET_KEY| | yes | 
-| COOKIES_IS_SECURE| false | no |
-| JWT_TOKEN_DURATION|1000 |
-| JWT_TOKEN_SECRET|secret | | yes |
-| CORS_ORIGIN_POLICY| * | no |
-| CORS_METHOD_POLICY|POST, GET, PATCH, OPTIONS | no |
-| CORS_HEADERS_POLICY|Content-Type,  Access-Control-Allow-Headers, Authorization, X-Requested-With | no |
-| CORS_CREDENTIALS_POLICY|true | no |
+Note that you can use the `.env.dist` template file.
+
+## Database
+
+LN Filestore Server requires access to a running Postgresql service. 
+
+**Database user**
+> DB_USER=user
+
+**Database URL**
+> DATABASE_URL=postgres://rustuser:rustuser@0.0.0.0:5433/test
+
+**Database password**
+> DB_PASSWORD=userpass
+
+**Database migrations**
+
+> DATABASE_RUN_MIGRATIONS_ON_IGNITE=true
+
+Indicates if the migrations should be run on server launch. 
+This is useful to build the database schema on first launch. 
+
+Note that the further launches of the server won't overwrite the already ran migrations.
 
 
-Note that you can use the `.env.dist` file as a template for that.
+## LND 
+
+**LND address**
+
+Note that the provided address **must** be an `https` url.
+
+> LND_ADDRESS=https://0.0.0.0:10009
+
+**LND Certfile path**
+> LND_CERTFILE_PATH="src/lnd/config/lnd.cert"
+
+**LND Macaroon path**
+
+> LND_MACAROON_PATH=src/lnd/config/invoices.macaroon
+
+You **must** provide a macaroon with read/write access on `invoices`. **Do not** provide admin macaroon for security reasons. 
+
+If you're unfamiliar with macaroons you can find documentation about what are macaroons [here](https://github.com/lightningnetwork/lnd/blob/master/docs/macaroons.md).
+
+## Rocket
+Rocket handles environment configuration with prefixed `ROCKET_*` env values. 
+
+You can  read the [official documentation](https://rocket.rs/v0.5-rc/guide/configuration/#environment-variables) for more information.
+
+**Temporary directory**
+>ROCKET_TEMP_DIR=tmp
+
+The temporary directory for files and data
+
+**SSL Configuration**
+> ROCKET_TLS={certs="ssl/localhost.pem",key="ssl/localhost-key.pem"}
+
+You can provide an SSL configuration in order to protect the server behind `https`.
+
+See [official documentation]() for more information.
+**Secret key**
+>ROCKET_SECRET_KEY="hPRYyVRiMyxpw5sBB1XeCMN1kFsDCqKvBi2QJxBVHQk="
+
+See [official documentation](https://api.rocket.rs/master/rocket/config/struct.SecretKey.html) for more information.
+## Invoices
+
+**Default invoice value**
+>DEFAULT_INVOICE_VALUE=250
+
+The default price - in satoshis - for an invoice.
+
+**Default memo**
+>DEFAULT_INVOICE_MEMO="Toto"
+
+The default message to use when generating an invoice.
+
+**Default lifetime**
+>DEFAULT_INVOICE_EXPIRY=300
+
+The default expiry time for an invoice
+
+## Cookies
+
+**secure cookie policy**
+
+> COOKIES_IS_SECURE_POLICY=true
+
+See [official cookie's rocket documentation](https://api.rocket.rs/v0.4/rocket/http/struct.Cookie.html#method.secure) for more details. 
+
+See [general documentation](https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies#security) for information around cookies secure flag.
+
+**same site cookie policy**
+
+> COOKIES_SAME_SITE_POLICY=strict
+
+Possible values : `strict`, `none` or `lax`. 
+
+Default policy is `lax`.
+
+# JWT
+
+**Token duration**
+> JWT_TOKEN_DURATION=1000
+
+Value represents seconds.
+
+**Token secret**
+
+> JWT_TOKEN_SECRET="secret"
+
+
+## CORS  
+
+**Origin policy**
+> CORS_ORIGIN_POLICY="https://localhost:3000"
+
+**Method policy**
+> CORS_METHOD_POLICY="POST, GET, PATCH, OPTIONS"
+
+**Headers policy**
+> CORS_HEADERS_POLICY="Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With"
+
+**Credentials policy**
+> CORS_CREDENTIALS_POLICY="true"
+
+##LIMITS POLICY
+
+
 
 ### Configure diesel options
 
 You need to create a `diesel.toml` file in the root folder to specify to diesel its configuration. You can use the `diesel.toml.dist` as a simple example of the configuration file.
-
-### Configure LND connection 
-
-The current project uses LND server to handle Lightning network.
-
-You'll need to provide :
-
-- `LND_ADDRESS` : The address to reach the LND server
-- `LND_CERTFILE_PATH` : the ssl certification file of your LND server
--  `LND_MACAROON_PATH` : The macaroon that will allow the rocket server to connect to your LND server. 
-
-**Note that the current project requires a macaroon with at least invoice write/read access.**
-
-```
-LND_ADDRESS="https://umbrel.local:10009"
-LND_CERTFILE_PATH="path/to/the/lnd.cert"
-LND_MACAROON_PATH="path/to/the/invoice.macaroon"
-```

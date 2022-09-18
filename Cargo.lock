@@ -1066,7 +1066,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7fb9b38af92608140b86b693604b9ffcc5824240a484d1ecd4795bacb2fe88f3"
 
 [[package]]
-name = "lnapi"
+name = "lnfilestoreserver"
 version = "0.1.1"
 dependencies = [
  "bcrypt",
