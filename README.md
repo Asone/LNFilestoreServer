@@ -2,11 +2,15 @@
  
 LN Filestore is a webserver to distribute files over the lightning network.
 
+Its primary use is made for [umbrel](https://www.umbrel.com)
 ## Requirements 
 
 In order to run the webserver you will have to provide access to a [postgresql](https://www.postgresql.org/) database and a [LND](https://github.com/lightningnetwork/lnd) synced node. 
 
 See [configuration documentation](./docs/configuration.md) for more details.
+
+If you want to run it on a docker-compose you can find an example in my [umbrel-apps](https://github.com/Asone/umbrel-apps/blob/master/lnfilestore/docker-compose.yml) fork. 
+
 
 ## Run
 
@@ -19,7 +23,6 @@ docker run akbarworld/lnfilestoreapi
 ````
 docker run akbarworld/lnfilestoreapi:umbrel
 ````
-
 
 ## Documentation
 

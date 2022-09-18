@@ -1,5 +1,5 @@
 [package]
-name = "lnapi"
+name = "lnfilestoreserver"
 version = "0.1.1"
 edition = "2018"
 
