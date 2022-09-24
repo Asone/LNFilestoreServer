@@ -1,0 +1,323 @@
+"""
+Full Post output type
+"""
+type PostType {
+  """
+  The post id
+  """
+  uuid: Uuid!
+
+  """
+  Title of post
+  """
+  title: String!
+
+  """
+  Short overview of post
+  """
+  excerpt: String!
+
+  """
+  Full content of post
+  """
+  content: String!
+
+  """
+  Publish status of post
+  """
+  published: Boolean!
+
+  """
+  Price of post access in satoshis. If free is 0
+  """
+  price: Int!
+
+  """
+  Creation date of post
+  """
+  createdAt: NaiveDateTime!
+}
+
+"""
+This should provide a generic Input type for payable
+data.
+The input should expect an optional `payment` field
+which would indicate a payment related to accessing
+The requested piece of data.
+If the field is not provided, the server should then
+build an invoice that would be used to return a payment_request
+to the client.
+"""
+input PayablePostInput {
+  """
+  The ln paywall payment request string
+  """
+  paymentRequest: String
+
+  """
+  The requested post id
+  """
+  uuid: Uuid!
+}
+
+input CreatePostInput {
+  """
+  The title of post
+  """
+  title: String!
+
+  """
+  The content of the post
+  """
+  content: String!
+
+  """
+  A short overview of the post
+  """
+  excerpt: String!
+
+  """
+  Publishing status of the post
+  """
+  published: Boolean!
+
+  """
+  The access price for post
+  """
+  price: Int!
+}
+
+type Mutation {
+  """
+  Creates a post. This mutation is available only for authenticated users.
+  """
+  createPost(post: CreatePostInput!): PostType!
+
+  """
+  Upload and stores a payable media onto the server
+  """
+  uploadFile(fileInput: FileInput!): Media!
+
+  """
+  Changes password for current user
+  """
+  changePassword(password: String!): Boolean!
+}
+
+"""
+Preview Post output type
+"""
+type PreviewPostType {
+  """
+  The post id
+  """
+  uuid: Uuid!
+
+  """
+  The title of the post
+  """
+  title: String!
+
+  """
+  Short overview of the post
+  """
+  excerpt: String!
+
+  """
+  Creation date of the post
+  """
+  createdAt: NaiveDateTime!
+
+  """
+  ln value to pay for content access
+  """
+  price: Int!
+}
+
+type SettledPayment {
+  """
+  The related media uuid
+  """
+  mediaUuid: Uuid!
+
+  """
+  The paywall ln invoice payment request string
+  """
+  paymentRequest: String!
+
+  """
+  The current state of the payment request
+  """
+  state: String
+}
+
+union MediaInvoice = ReplacementPayment | AvailablePayment | SettledPayment
+
+"""
+A payment request object
+"""
+type PaymentType {
+  """
+  The paywall ln invoice payment request string
+  """
+  paymentRequest: String!
+
+  """
+  The expiry time of current invoice
+  """
+  expiresAt: NaiveDateTime!
+
+  """
+  The current state of the payment request
+  """
+  state: String
+}
+
+"""
+Full Media output type
+"""
+type Media {
+  """
+  The media internal id
+  """
+  uuid: Uuid!
+
+  """
+  Media's title
+  """
+  title: String!
+
+  """
+  Description of media
+  """
+  description: String
+
+  """
+  Price of media access in satoshis. If free is 0
+  """
+  price: Int!
+
+  """
+  Creation date of media
+  """
+  createdAt: NaiveDateTime!
+
+  """
+  the public URL to a media
+  """
+  publicUrl: String!
+
+  """
+  The file type
+  """
+  fileType: String
+
+  """
+  The file size
+  """
+  fileSize: Int
+}
+
+type Query {
+  """
+  Retrieves the list of posts
+  """
+  getPostsList: [PreviewPostType!]!
+
+  """
+  Requests list of files
+  """
+  getFilesList: [Media!]!
+
+  """
+  Requests an invoice for a media.
+
+  If a payment_request is provided, the query will check
+  for the provided payment_request status and provide a new onee
+  if necessary.
+  """
+  requestInvoiceForMedia(uuid: Uuid!, paymentRequest: String): MediaInvoice!
+
+  """
+  Requests a ln query paywall invoice for a given post
+  """
+  requestInvoiceForPost(postId: Uuid!): PaymentType!
+
+  """
+  Gets a specific post. The query is protected through a paywall
+  """
+  getMedia(uuid: Uuid!, paymentRequest: String): Media!
+
+  """
+  Gets a specific post. The query is protected through a paywall
+  """
+  getPost(post: PayablePostInput!): PostType!
+
+  """
+  Gets the list of available medias
+  """
+  getMediasList: [Media!]!
+}
+
+"""
+NaiveDateTime
+"""
+scalar NaiveDateTime
+
+"""
+Uuid
+"""
+scalar Uuid
+
+type ReplacementPayment {
+  """
+  The related media uuid
+  """
+  mediaUuid: Uuid!
+
+  """
+  The paywall ln invoice payment request string
+  """
+  paymentRequest: String!
+
+  """
+  The expiry time of current invoice
+  """
+  expiresAt: NaiveDateTime!
+
+  """
+  The current state of the payment request
+  """
+  state: String
+}
+
+input FileInput {
+  filename: String!
+  title: String!
+  description: String
+  price: Int!
+  published: Boolean!
+  file: String
+}
+
+type AvailablePayment {
+  """
+  The related media uuid
+  """
+  mediaUuid: Uuid!
+
+  """
+  The paywall ln invoice payment request string
+  """
+  paymentRequest: String!
+
+  """
+  The expiry time of current invoice
+  """
+  expiresAt: NaiveDateTime!
+
+  """
+  The current state of the payment request
+  """
+  state: String
+}

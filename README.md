@@ -3,9 +3,13 @@
 LN Filestore is a webserver to distribute files over the lightning network.
 
 Its primary use is made for [umbrel](https://www.umbrel.com)
+
+The current repo provides the API server part. If you want more information about the API and its routes see the [extended documentation](./docs/routes.md)
+
+A NextJS front-end app for Umbrel is available [here]() 
 ## Requirements 
 
-In order to run the webserver you will have to provide access to a [postgresql](https://www.postgresql.org/) database and a [LND](https://github.com/lightningnetwork/lnd) synced node. 
+In order to run the webserver you will have to provide access to a [postgresql](https://www.postgresql.org/) database and a [LND](https://github.com/lightningnetwork/lnd) node synced with Bitcoin's timechain. 
 
 See [configuration documentation](./docs/configuration.md) for more details.
 
@@ -30,10 +34,12 @@ An extended documentation is provided in the `docs` folder to help you understan
 
 - [Configuration](./docs/configuration.md)
 - [Build](./docs/installation.md)
+- [Routes](./docs/routes.md)
 
 ## Main dependencies
 
-The project reliess on many dependencies to build and distribute the API. 
+The project relies on many dependencies to build and distribute the API.
+
 In order to understand how it is built and works, you can check the documentations of those dependencies : 
 
 - [Rocket](https://rocket.rs/) : Provides the web server ([documentation](https://api.rocket.rs/v0.5-rc/rocket/))
