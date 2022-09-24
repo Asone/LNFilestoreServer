@@ -7,7 +7,8 @@ Do note that compilation can take a while, be slow and have heavy resources cons
 
 The initial build will have to download and compile every dependency which may take a while. 
 
-If you intend to build the docker image, ensure your docker provides the sufficient ressources like memory in order to avoid panic errors at compile time. 
+If you intend to build the docker image, ensure your docker provides the sufficient ressources - e.g: memory - in order to avoid panic errors at compile time. 
+
 
 ## Build locally
 
@@ -19,10 +20,12 @@ git clone <project_url>
 
 2. go to the folder and build the binary : 
 ```
-cargo install --path .
+cargo build
 ```
+This will compile the project with dependencies install and compiling if needed.
 
 then you can run it : 
+
 ````
 cargo run
 
