@@ -1,4 +1,5 @@
-use crate::db::models::{media_payment::MediaPayment, payment::Payment};
+use crate::db::models::{media_payment::MediaPayment, 
+};
 use chrono::NaiveDateTime;
 use tonic_lnd::rpc::invoice::InvoiceState;
 
@@ -11,16 +12,6 @@ pub struct PaymentType {
     expires_at: NaiveDateTime,
     #[graphql(description = "The current state of the payment request")]
     state: Option<String>,
-}
-
-impl From<Payment> for PaymentType {
-    fn from(item: Payment) -> Self {
-        Self {
-            payment_request: item.request,
-            expires_at: item.expires_at,
-            state: None,
-        }
-    }
 }
 
 impl From<MediaPayment> for PaymentType {
