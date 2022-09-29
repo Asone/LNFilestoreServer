@@ -33,29 +33,6 @@ table! {
 }
 
 table! {
-    payment (uuid) {
-        uuid -> Uuid,
-        request -> Text,
-        state -> Nullable<Text>,
-        hash -> Text,
-        post_uuid -> Uuid,
-        expires_at -> Timestamptz,
-    }
-}
-
-table! {
-    post (uuid) {
-        uuid -> Uuid,
-        title -> Text,
-        excerpt -> Text,
-        content -> Text,
-        published -> Bool,
-        created_at -> Timestamptz,
-        price -> Int4,
-    }
-}
-
-table! {
     session (uuid) {
         uuid -> Uuid,
         token -> Text,
@@ -77,15 +54,12 @@ table! {
 }
 
 joinable!(media_payment -> media (media_uuid));
-joinable!(payment -> post (post_uuid));
 joinable!(session -> user (user_uuid));
 
 allow_tables_to_appear_in_same_query!(
     api_payment,
     media,
     media_payment,
-    payment,
-    post,
     session,
     user,
 );

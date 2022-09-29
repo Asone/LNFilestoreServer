@@ -1,10 +1,7 @@
 #![allow(deprecated)]
-
-use crate::db::models::Post;
 use chrono::{Duration, NaiveDateTime, Utc};
 use std::env;
 use tonic_lnd::rpc::invoice::InvoiceState;
-// use tonic::codegen::InterceptedService;
 use tonic::{Code, Status};
 use tonic_lnd::rpc::lightning_client::LightningClient;
 use tonic_lnd::rpc::{Invoice, PaymentHash};
@@ -78,28 +75,6 @@ pub struct InvoiceUtils {}
 
 impl InvoiceUtils {
     /**
-        Generates an invoice for a post
-        This shall be called whenever the user
-        requests a resource without providing a payment request value
-        or when the related invoice is expired/canceled.
-    */
-    pub async fn generate_post_invoice(
-        lnd_client: LightningClient<
-            InterceptedService<tonic::transport::Channel, MacaroonInterceptor>,
-        >,
-        post: Post,
-    ) -> LndInvoice {
-        let params = InvoiceParams::new(
-            Some(post.price as i64),
-            // Memo content should be handle with an env var pattern
-            Some(format!("buy {} : {}", post.uuid, post.title).to_string()),
-            None,
-        );
-        // Request invoice generation to the LN Server
-        InvoiceUtils::generate_invoice(lnd_client, params).await
-    }
-
-    /**
        Generate an invoice through lnd
     */
     pub async fn generate_invoice(
@@ -123,7 +98,7 @@ impl InvoiceUtils {
             r_hash_str: hex::encode(result.r_hash.clone()), // provided as request by the Struct but not used and deprecated
         };
 
-        // // Get the Invoice detail so we can return the payment_request
+        // Get the Invoice detail so we can return the payment_request
         let invoice = lnd_client
             .lookup_invoice(payment_hash)
             .await
@@ -132,56 +107,6 @@ impl InvoiceUtils {
 
         LndInvoice::new(invoice, hex::encode(result.r_hash))
     }
-
-    // pub async fn state_invoice<'a>(
-    //     lnd_client: &LightningClient<
-    //         InterceptedService<tonic::transport::Channel, MacaroonInterceptor>,
-    //     >,
-    //     payment_request: String) -> Result<Invoice, Status> {
-    //         let mut client = lnd_client.clone();
-
-    //         // Parse the payment request
-    //         let invoice = payment_request
-    //             .as_str()
-    //             .parse::<SignedRawInvoice>()
-    //             .unwrap();
-
-    //         // Get the payment hash
-    //         let p_hash = invoice.payment_hash().unwrap();
-
-    //         /*
-    //             The below instruction might seems a bit odd.
-    //             the expected r_hash here is not the Invoice r_hash
-    //             but rather the r_hash of the payment request which is
-    //             denominated in the SignedRawInvoice as the payment_hash.
-    //         */
-    //         let request = tonic::Request::new(PaymentHash {
-    //             r_hash: p_hash.0.to_vec(),
-    //             ..PaymentHash::default()
-    //         });
-
-    //         match client.lookup_invoice(request).await {
-    //             Ok(response) => {
-    //                 match response.into_inner().state() {
-    //                     InvoiceState::Open => Err(Status::PaymentRequired),
-    //                     InvoiceState::Settled => Ok(Status::Ok),
-    //                     InvoiceState::Canceled => Err(Status::PaymentRequired),
-    //                     InvoiceState::Accepted => Err(Status::Accepted),
-    //                 }
-    //             } ,
-    //             Err(status) => {
-    //                 if status.code() == Code::Unknown
-    //                     && (status.message() == "there are no existing invoices"
-    //                         || status.message() == "unable to locate invoice")
-    //                 {
-    //                     Ok(None)
-    //                 } else {
-    //                     Err(status)
-    //                 }
-    //             }
-    //         }
-    //     }
-    // }
 
     //    Gets the invoice state from a payment request string.
     //    It consists as a two steps method.

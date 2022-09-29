@@ -2,15 +2,15 @@ use juniper::{FieldError, FieldResult};
 
 use crate::db::models::{
     media::{Media, NewMedia},
-    post::{NewPost, Post},
     user::User,
 };
 
 use super::{
     context::GQLContext,
     types::{
-        input::{file::FileInput, post::CreatePostInput},
-        output::{media::MediaType, post::PostType},
+        input::{file::FileInput},
+        output::{media::MediaType, 
+        },
     },
 };
 use crate::graphql::mutations::update_password;
@@ -28,33 +28,6 @@ impl Mutation {
 
 #[juniper::graphql_object(context = GQLContext)]
 impl Mutation {
-    #[graphql(
-        description = "Creates a post. This mutation is available only for authenticated users."
-    )]
-    async fn create_post<'a>(
-        context: &'a GQLContext,
-        post: CreatePostInput,
-    ) -> FieldResult<PostType> {
-        if Self::is_authenticated(&context.user) == false {
-            return Err(FieldError::new(
-                "You need to be authenticated to use this mutation",
-                graphql_value!(""),
-            ));
-        }
-
-        let connection = context.get_db_connection();
-        let result = connection
-            .run(|c| Post::create(NewPost::from(post), c))
-            .await;
-
-        match result {
-            Ok(r) => Ok(PostType::from(r)),
-            Err(e) => {
-                let error = r#"{}"#;
-                Err(FieldError::new(e, graphql_value!(error)))
-            }
-        }
-    }
 
     #[graphql(description = "Upload and stores a payable media onto the server")]
     async fn upload_file<'a>(
