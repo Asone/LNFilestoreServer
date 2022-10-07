@@ -56,10 +56,4 @@ table! {
 joinable!(media_payment -> media (media_uuid));
 joinable!(session -> user (user_uuid));
 
-allow_tables_to_appear_in_same_query!(
-    api_payment,
-    media,
-    media_payment,
-    session,
-    user,
-);
+allow_tables_to_appear_in_same_query!(api_payment, media, media_payment, session, user,);
