@@ -1,5 +1,3 @@
-use std::fs::File;
-
 use crate::{
     db::models::{
         media::Media,
@@ -8,20 +6,24 @@ use crate::{
     graphql::context::GQLContext,
     lnd::invoice::{InvoiceParams, InvoiceUtils},
 };
+use base64;
 use chrono::NaiveDateTime;
 use infer::Infer;
 use juniper::Value;
 use juniper::{FieldError, FieldResult};
-use serde::{Deserialize, Serialize};
+use juniper_relay::RelayConnectionNode;
+use std::fs::File;
 
-#[derive(Clone, Serialize, Deserialize)]
-pub struct MediaPreviewType {
-    pub uuid: uuid::Uuid,
-    pub description: Option<String>,
-    pub price: i32,
-    pub published: bool,
-    pub created_at: NaiveDateTime,
-}
+
+/// To be deleted
+// #[derive(Clone, Serialize, Deserialize)]
+// pub struct MediaPreviewType {
+//     pub uuid: uuid::Uuid,
+//     pub description: Option<String>,
+//     pub price: i32,
+//     pub published: bool,
+//     pub created_at: NaiveDateTime,
+// }
 
 #[derive(Clone)]
 pub struct MediaType {
@@ -65,6 +67,9 @@ impl From<(Media, String)> for MediaType {
 }
 
 impl MediaType {
+
+    // This method builds a json object with payment requirements details.
+    // The json object will be provided as an error's extension of graphql response
     async fn _generate_invoiced_error(&self, context: &GQLContext, message: &str) -> FieldError {
         let connection = context.get_db_connection();
         let params = InvoiceParams::new(Some(self.price.into()), None, None);
@@ -159,5 +164,24 @@ impl MediaType {
             }
             Err(_) => None,
         }
+    }
+}
+
+/// Implements relay connection for Medias
+/// It allows using obscure cursors for pagination
+impl RelayConnectionNode for MediaType {
+    type Cursor = String;
+
+    fn cursor(&self) -> Self::Cursor {
+        let cursor = format!("media:{}", self.uuid);
+        base64::encode(cursor)
+    }
+
+    fn connection_type_name() -> &'static str {
+        "MediaConnection"
+    }
+
+    fn edge_type_name() -> &'static str {
+        "MediaConnectionEdge"
     }
 }
