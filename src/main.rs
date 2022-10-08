@@ -33,9 +33,10 @@ use app::Schema;
 use db::igniter::run_db_migrations;
 use dotenv::dotenv;
 use juniper::EmptySubscription;
-use rocket::fairing::AdHoc;
 use rocket::Rocket;
-use routes::{auth::login, file::get_file, utils::graphiql};
+use rocket::{fairing::AdHoc, Route};
+use routes::{auth::login, file::get_file, utils::graphiql, utils::static_index};
+use std::env;
 
 use app::{
     auth_options_handler, graphql_options_handler, payable_post_graphql_handler,
@@ -59,6 +60,17 @@ async fn main() -> Result<(), rocket::Error> {
     dotenv().ok();
     config::init();
 
+    let server_routes = rocket::routes![
+        graphql_options_handler,
+        auth_options_handler,
+        graphiql,
+        post_graphql_handler,
+        payable_post_graphql_handler,
+        upload,
+        login,
+        get_file
+    ];
+
     let _rocket = Rocket::build()
         .attach(PostgresConn::fairing())
         .attach(Cors)
@@ -74,22 +86,39 @@ async fn main() -> Result<(), rocket::Error> {
             Mutation,
             EmptySubscription::<GQLContext>::new(),
         ))
-        .mount(
-            "/",
-            rocket::routes![
-                graphql_options_handler,
-                auth_options_handler,
-                graphiql,
-                post_graphql_handler,
-                payable_post_graphql_handler,
-                upload,
-                login,
-                get_file
-            ],
-        )
+        .mount("/", routes_builder())
         .launch()
         .await
         .expect("server to launch");
 
     Ok(())
+}
+
+fn routes_builder() -> Vec<Route> {
+    let mut base_routes = rocket::routes![
+        graphql_options_handler,
+        auth_options_handler,
+        post_graphql_handler,
+        payable_post_graphql_handler,
+        upload,
+        login,
+        get_file
+    ];
+
+    let enable_dev_tools = env::var("ENABLE_DEV_TOOLS").unwrap_or("false".to_string());
+
+    let enable_dev_tools = enable_dev_tools.parse::<bool>().unwrap_or(false);
+
+    let additional_routes = match enable_dev_tools {
+        true => {
+            routes![graphiql]
+        }
+        false => {
+            routes![static_index]
+        }
+    };
+
+    base_routes.extend(additional_routes);
+
+    return base_routes;
 }
