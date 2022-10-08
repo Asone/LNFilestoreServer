@@ -50,7 +50,7 @@ impl<'r> FromRequest<'r> for LndClient {
             Ok(result) => Outcome::Success(LndClient(result)),
             Err(e) => {
                 println!("Error while connecting to LND server");
-                println!("{}",e);
+                println!("{}", e);
                 Outcome::Failure((Status::ServiceUnavailable, ()))
             }
         }

@@ -1,10 +1,16 @@
+
+
 [package]
 name = "lnfilestoreserver"
 version = "0.1.1"
 edition = "2018"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[workspace]
+members = [
+    "juniper_relay"
+]
 
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
 futures = "0.3.1"
 rocket = { version = "0.5.0-rc.2", features = ["tls"] }
@@ -32,6 +38,7 @@ regex = "1.5.5"
 bcrypt = "0.13.0"
 juniper_rocket_multipart_handler = "0.1.0"
 infer = "0.8.1"
+base64 = "0.13.0"
 
 [dependencies.tokio-util]
 version = "0.7.1"
@@ -41,3 +48,5 @@ version = "0.1.0-rc.2"
 
 features = ["diesel_postgres_pool"]
 
+[dependencies.juniper_relay]
+path = "./juniper_relay"

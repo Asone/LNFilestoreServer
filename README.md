@@ -33,7 +33,7 @@ docker run akbarworld/lnfilestoreapi:umbrel
 An extended documentation is provided in the `docs` folder to help you understand how to configure, build and run the server : 
 
 - [Configuration](./docs/configuration.md)
-- [Build](./docs/installation.md)
+- [Build](./docs/build.md)
 - [Routes](./docs/routes.md)
 
 ## Main dependencies

@@ -997,6 +997,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "juniper_relay"
+version = "0.1.0"
+dependencies = [
+ "juniper",
+]
+
+[[package]]
 name = "juniper_rocket"
 version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1069,6 +1076,7 @@ checksum = "7fb9b38af92608140b86b693604b9ffcc5824240a484d1ecd4795bacb2fe88f3"
 name = "lnfilestoreserver"
 version = "0.1.1"
 dependencies = [
+ "base64",
  "bcrypt",
  "chrono",
  "derive_more",
@@ -1082,6 +1090,7 @@ dependencies = [
  "itconfig",
  "jsonwebtoken",
  "juniper",
+ "juniper_relay",
  "juniper_rocket",
  "juniper_rocket_multipart_handler",
  "lazy_static",
