@@ -60,17 +60,6 @@ async fn main() -> Result<(), rocket::Error> {
     dotenv().ok();
     config::init();
 
-    let server_routes = rocket::routes![
-        graphql_options_handler,
-        auth_options_handler,
-        graphiql,
-        post_graphql_handler,
-        payable_post_graphql_handler,
-        upload,
-        login,
-        get_file
-    ];
-
     let _rocket = Rocket::build()
         .attach(PostgresConn::fairing())
         .attach(Cors)

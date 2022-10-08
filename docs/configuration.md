@@ -130,8 +130,10 @@ Value represents seconds.
 **Credentials policy**
 > CORS_CREDENTIALS_POLICY="true"
 
-##LIMITS POLICY
+## Dev tools 
 
+You can enable a [graphiQL]() instance for development : 
+> ENABLE_DEV_TOOLS=true
 
 
 ### Configure diesel options
