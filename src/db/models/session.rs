@@ -33,12 +33,12 @@ pub struct NewUserSession {
 
 impl NewUserSession {}
 
-impl From<(String, User)> for NewUserSession {
-    fn from(data: (String, User)) -> Self {
+impl From<User> for NewUserSession {
+    fn from(user: User) -> Self {
         Self {
             uuid: Uuid::new_v4(),
             token: Uuid::new_v4().to_string(),
-            user_uuid: data.1.uuid,
+            user_uuid: user.uuid,
             expires_at: UserSession::expiry_generator(None).naive_utc(),
         }
     }
