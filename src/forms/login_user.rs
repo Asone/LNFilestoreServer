@@ -32,10 +32,8 @@ impl LoginUser {
             Some(user) => match verify(password.as_str(), hashed_password.as_str()) {
                 Ok(result) => match result {
                     true => {
-                        db.run(move |c| {
-                            UserSession::create(NewUserSession::from(("toto".to_string(), user)), c)
-                        })
-                        .await
+                        db.run(move |c| UserSession::create(NewUserSession::from(user), c))
+                            .await
                     }
                     false => Err(AuthenticationError::PasswordMismatch(
                         "Passwords dont match".to_string(),
