@@ -1,16 +1,14 @@
+use super::file::File;
 use crate::db::media_type_enum::MediaTypeEnum;
 use crate::db::media_type_enum::MediaTypeEnumMapping;
 pub use crate::db::schema::media;
-use super::file::File;
 use crate::graphql::types::input::file::FileInput;
 use chrono::NaiveDateTime;
 use diesel;
 use diesel::prelude::*;
 use diesel::PgConnection;
-use uuid::Uuid;
 use std::path::PathBuf;
-
-
+use uuid::Uuid;
 
 #[derive(Identifiable, Queryable, PartialEq, Debug)]
 #[primary_key(uuid)]
@@ -22,11 +20,10 @@ pub struct Media {
     pub price: i32,
     pub published: bool,
     pub file_uuid: uuid::Uuid,
-    pub type_ : MediaTypeEnum,
+    pub type_: MediaTypeEnum,
     pub metadata: uuid::Uuid,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
-
 }
 
 #[derive(Identifiable, Queryable, PartialEq, Debug)]
@@ -39,11 +36,10 @@ pub struct MediaDbModel {
     pub price: i32,
     pub published: bool,
     pub file_uuid: uuid::Uuid,
-    pub type_ : MediaTypeEnum,
+    pub type_: MediaTypeEnum,
     pub metadata: uuid::Uuid,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
-
 }
 
 #[derive(Debug, Insertable, Associations)]
@@ -61,7 +57,7 @@ pub struct NewMedia {
     pub metadata: uuid::Uuid,
 }
 
-#[derive(Debug, Queryable,Identifiable, PartialEq, AsChangeset)]
+#[derive(Debug, Queryable, Identifiable, PartialEq, AsChangeset)]
 #[primary_key(uuid)]
 #[table_name = "media"]
 pub struct EditMedia {
@@ -71,7 +67,6 @@ pub struct EditMedia {
     pub published: bool,
     pub price: i32,
 }
-
 
 impl From<(&PathBuf, FileInput)> for NewMedia {
     fn from(file_data: (&PathBuf, FileInput)) -> Self {
@@ -83,7 +78,7 @@ impl From<(&PathBuf, FileInput)> for NewMedia {
             published: file_data.1.published,
             file_uuid: uuid::Uuid::new_v4(),
             type_: MediaTypeEnum::Default,
-            metadata: uuid::Uuid::new_v4()
+            metadata: uuid::Uuid::new_v4(),
         }
     }
 }
@@ -95,7 +90,6 @@ impl From<(&PathBuf, FileInput)> for NewMedia {
 // }
 
 impl Media {
-
     pub fn create(new_media: NewMedia, connection: &PgConnection) -> QueryResult<Media> {
         use crate::db::schema::media::dsl::*;
 
@@ -104,14 +98,15 @@ impl Media {
             .get_result(connection)
     }
 
-    pub fn edit(edit_media: EditMedia,connection: &PgConnection) -> QueryResult<Media> {
-         use crate::db::schema::media::dsl::*;
-            diesel::update(media).set(&edit_media).get_result(connection)
-        
+    pub fn edit(edit_media: EditMedia, connection: &PgConnection) -> QueryResult<Media> {
+        use crate::db::schema::media::dsl::*;
+        diesel::update(media)
+            .set(&edit_media)
+            .get_result(connection)
     }
 
     pub fn delete() -> () {
-    use crate::db::schema::media::dsl::*;
+        use crate::db::schema::media::dsl::*;
 
         // diesel::delete<media>(media.filter(id))
         ()
@@ -138,5 +133,4 @@ impl Media {
             .first::<Media>(connection)
             .optional()
     }
-
 }

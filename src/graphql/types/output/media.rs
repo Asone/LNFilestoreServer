@@ -1,3 +1,5 @@
+use super::file::FileType;
+use crate::db::models::file::File;
 use crate::{
     db::models::{
         media::Media,
@@ -12,7 +14,6 @@ use infer::Infer;
 use juniper::Value;
 use juniper::{FieldError, FieldResult};
 use juniper_relay_connection::RelayConnectionNode;
-use std::fs::File;
 
 /// To be deleted
 // #[derive(Clone, Serialize, Deserialize)]
@@ -29,6 +30,7 @@ pub struct MediaType {
     pub uuid: uuid::Uuid,
     pub title: String,
     pub description: Option<String>,
+    pub file_uuid: uuid::Uuid,
     pub price: i32,
     pub published: bool,
     pub created_at: NaiveDateTime,
@@ -39,10 +41,11 @@ impl From<Media> for MediaType {
         Self {
             uuid: item.uuid,
             title: item.title,
+            file_uuid: item.file_uuid,
             description: item.description,
             price: item.price,
             published: item.published,
-            created_at: item.created_at
+            created_at: item.created_at,
         }
     }
 }
@@ -54,10 +57,11 @@ impl From<(Media, String)> for MediaType {
         Self {
             uuid: media.uuid,
             title: media.title,
+            file_uuid: media.file_uuid,
             description: media.description,
             price: media.price,
             published: media.published,
-            created_at: media.created_at
+            created_at: media.created_at,
         }
     }
 }
@@ -133,6 +137,29 @@ impl MediaType {
     fn public_url<'a>(&self, _context: &'a GQLContext) -> FieldResult<String> {
         let uri = format!("/file/{}", &self.uuid);
         Ok(uri)
+    }
+
+    #[graphql(description = "")]
+    async fn file<'a>(&self, context: &'a GQLContext) -> FieldResult<FileType> {
+        let file_uuid = self.file_uuid;
+        let object = context
+            .get_db_connection()
+            .run(move |c| File::find_one_by_uuid(file_uuid, c))
+            .await;
+
+        match object {
+            Ok(result) => match result {
+                Some(result) => Ok(FileType::from(result)),
+                None => Err(FieldError::new(
+                    "No File object found for current media",
+                    Value::Null,
+                )),
+            },
+            Err(_) => Err(FieldError::new(
+                "Could not retrieve object from database",
+                Value::Null,
+            )),
+        }
     }
     // #[graphql(description = "The file type")]
     // fn file_type(&self) -> Option<&str> {
