@@ -7,7 +7,7 @@ use crate::db::models::media::Media;
 use crate::graphql::context::GQLContext;
 use crate::graphql::types::output::invoices::MediaInvoice;
 use juniper::{FieldError, FieldResult};
-use juniper_relay::RelayConnection;
+use juniper_relay_connection::RelayConnection;
 use uuid::Uuid;
 pub struct Query;
 

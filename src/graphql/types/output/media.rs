@@ -11,7 +11,7 @@ use chrono::NaiveDateTime;
 use infer::Infer;
 use juniper::Value;
 use juniper::{FieldError, FieldResult};
-use juniper_relay::RelayConnectionNode;
+use juniper_relay_connection::RelayConnectionNode;
 use std::fs::File;
 
 /// To be deleted
