@@ -11,9 +11,8 @@ use chrono::NaiveDateTime;
 use infer::Infer;
 use juniper::Value;
 use juniper::{FieldError, FieldResult};
-use juniper_relay::RelayConnectionNode;
+use juniper_relay_connection::RelayConnectionNode;
 use std::fs::File;
-
 
 /// To be deleted
 // #[derive(Clone, Serialize, Deserialize)]
@@ -67,7 +66,6 @@ impl From<(Media, String)> for MediaType {
 }
 
 impl MediaType {
-
     // This method builds a json object with payment requirements details.
     // The json object will be provided as an error's extension of graphql response
     async fn _generate_invoiced_error(&self, context: &GQLContext, message: &str) -> FieldError {

@@ -1,5 +1,4 @@
-use crate::db::models::{media_payment::MediaPayment, 
-};
+use crate::db::models::media_payment::MediaPayment;
 use chrono::NaiveDateTime;
 use tonic_lnd::rpc::invoice::InvoiceState;
 
