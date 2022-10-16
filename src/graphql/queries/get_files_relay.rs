@@ -1,5 +1,5 @@
 use juniper::FieldResult;
-use juniper_relay::RelayConnection;
+use juniper_relay_connection::RelayConnection;
 
 use crate::{
     db::models::media::Media,
