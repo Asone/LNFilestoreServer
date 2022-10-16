@@ -5,6 +5,7 @@ use self::models::api_payment::ApiPayment;
 pub mod igniter;
 pub mod models;
 pub mod schema;
+pub mod media_type_enum;
 
 #[database("main_db")]
 pub struct PostgresConn(pub diesel::PgConnection);

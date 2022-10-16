@@ -14,7 +14,6 @@ use juniper::{FieldError, FieldResult};
 use juniper_relay::RelayConnectionNode;
 use std::fs::File;
 
-
 /// To be deleted
 // #[derive(Clone, Serialize, Deserialize)]
 // pub struct MediaPreviewType {
@@ -33,7 +32,6 @@ pub struct MediaType {
     pub price: i32,
     pub published: bool,
     pub created_at: NaiveDateTime,
-    absolute_path: String,
 }
 
 impl From<Media> for MediaType {
@@ -44,8 +42,7 @@ impl From<Media> for MediaType {
             description: item.description,
             price: item.price,
             published: item.published,
-            created_at: item.created_at,
-            absolute_path: item.absolute_path,
+            created_at: item.created_at
         }
     }
 }
@@ -60,14 +57,12 @@ impl From<(Media, String)> for MediaType {
             description: media.description,
             price: media.price,
             published: media.published,
-            created_at: media.created_at,
-            absolute_path: media.absolute_path,
+            created_at: media.created_at
         }
     }
 }
 
 impl MediaType {
-
     // This method builds a json object with payment requirements details.
     // The json object will be provided as an error's extension of graphql response
     async fn _generate_invoiced_error(&self, context: &GQLContext, message: &str) -> FieldError {
@@ -139,32 +134,32 @@ impl MediaType {
         let uri = format!("/file/{}", &self.uuid);
         Ok(uri)
     }
-    #[graphql(description = "The file type")]
-    fn file_type(&self) -> Option<&str> {
-        let info = Infer::new();
-        let kind = info.get_from_path(&self.absolute_path);
+    // #[graphql(description = "The file type")]
+    // fn file_type(&self) -> Option<&str> {
+    //     let info = Infer::new();
+    //     let kind = info.get_from_path(&self.absolute_path);
 
-        match kind {
-            Ok(result) => match result {
-                Some(t) => return Some(t.extension()),
-                None => return None,
-            },
-            Err(_) => return None,
-        }
-    }
+    //     match kind {
+    //         Ok(result) => match result {
+    //             Some(t) => return Some(t.extension()),
+    //             None => return None,
+    //         },
+    //         Err(_) => return None,
+    //     }
+    // }
 
-    #[graphql(description = "The file size")]
-    fn file_size(&self) -> Option<i32> {
-        let file = File::open(&self.absolute_path);
+    // #[graphql(description = "The file size")]
+    // fn file_size(&self) -> Option<i32> {
+    //     let file = File::open(&self.absolute_path);
 
-        match file {
-            Ok(file) => {
-                let size = file.metadata().unwrap().len().to_string();
-                Some(size.parse::<i32>().unwrap_or(0))
-            }
-            Err(_) => None,
-        }
-    }
+    //     match file {
+    //         Ok(file) => {
+    //             let size = file.metadata().unwrap().len().to_string();
+    //             Some(size.parse::<i32>().unwrap_or(0))
+    //         }
+    //         Err(_) => None,
+    //     }
+    // }
 }
 
 /// Implements relay connection for Medias

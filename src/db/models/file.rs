@@ -1,12 +1,10 @@
 
 pub use crate::db::schema::file;
 
-use crate::graphql::types::input::file::FileInput;
 use chrono::NaiveDateTime;
 use diesel;
 use diesel::prelude::*;
 use diesel::PgConnection;
-use std::path::PathBuf;
  
 
 #[derive(Identifiable, Queryable, PartialEq, Debug)]
@@ -15,6 +13,33 @@ use std::path::PathBuf;
 pub struct File{
     pub uuid: uuid::Uuid,
     pub absolute_path: String,
+    pub uploaded_by: uuid::Uuid,
+    pub checksum: String,
+    pub price: i32,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
+}
+
+#[derive(Debug, Insertable)]
+#[table_name = "file"]
+pub struct NewFile{
+    pub absolute_path: String,
+    pub uploaded_by: uuid::Uuid,
+    pub checksum: String,
+    pub size: i32
+}
+
+impl File{
+   pub fn create(new_file: NewFile, connection: &PgConnection) -> QueryResult<File> {
+        use crate::db::schema::file::dsl::*;
+
+        diesel::insert_into::<file>(file)
+            .values(&new_file)
+            .get_result(connection)
+    }
+
+    pub fn delete(uuid: uuid::Uuid) -> () {
+
+    }
+
 }

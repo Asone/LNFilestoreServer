@@ -16,7 +16,7 @@ use crate::{
     db::{
         models::{
             media::Media,
-            media_payment::{MediaPayment, NewMediaPayment},
+            media_payment::{MediaPayment, NewMediaPayment}, file::File,
         },
         PostgresConn,
     },
@@ -64,7 +64,7 @@ pub async fn get_file(
 
     // If the media exists and is free we should deliver it to the user without performing any further operation
     if media.price == 0 {
-        return set_download_responder(media).await;
+        return set_download_responder(media.file).await;
     }
 
     // Otherwise we ensure try to retrieve an associated payment to the requested media.
@@ -109,7 +109,7 @@ pub async fn get_file(
     let invoice = invoice.unwrap();
 
     match invoice.state() {
-        InvoiceState::Settled => set_download_responder(media).await,
+        InvoiceState::Settled => set_download_responder(media.file).await,
         InvoiceState::Accepted => Err(status::Custom(Status::NotFound, None)),
         InvoiceState::Canceled => {
             let invoice = request_new_media_payment(&media, lnd, db).await;
@@ -237,9 +237,9 @@ async fn get_invoice(
 }
 
 async fn set_download_responder(
-    media: Media,
+    file: File,
 ) -> Result<DownloadResponder, status::Custom<Option<RawJson<String>>>> {
-    let path = Path::new(&media.absolute_path);
+    let path = Path::new(&file.absolute_path);
     let filename = path.file_name();
 
     match filename {
