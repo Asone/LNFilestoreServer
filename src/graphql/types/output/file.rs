@@ -1,4 +1,5 @@
 use chrono::NaiveDateTime;
+use uuid::Uuid;
 
 use crate::{db::models::file::File, graphql::context::GQLContext};
 
@@ -27,6 +28,21 @@ impl FileType {
     #[graphql(description = "The file checksum")]
     pub fn checksum(&self) -> &String {
         &self.checksum
+    }
+
+    #[graphql(description = "The file size")]
+    pub fn size(&self) -> i32 {
+        self.size
+    }
+
+    #[graphql(description = "The creation date on server")]
+    pub fn created_at(&self) -> NaiveDateTime {
+        self.created_at
+    }
+
+    #[graphql(description = "The creation date on server")]
+    pub fn uploaded_by(&self) -> Uuid {
+        self.uploaded_by
     }
 }
 

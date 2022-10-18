@@ -8,5 +8,5 @@ pub enum MediaTypeEnum {
     Video,
     Pdf,
     Epub,
-    Image
+    Image,
 }
