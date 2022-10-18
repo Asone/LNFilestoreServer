@@ -5,6 +5,7 @@ use chrono::NaiveDateTime;
 use diesel;
 use diesel::prelude::*;
 use diesel::PgConnection;
+use uuid::Uuid;
 use std::path::PathBuf;
 
 #[derive(Identifiable, Queryable, PartialEq, Debug)]
@@ -69,5 +70,16 @@ impl Media {
             .filter(uuid.eq(media_uuid))
             .first::<Media>(connection)
             .optional()
+    }
+
+    pub fn update(
+        media_uuid: Uuid
+    ) -> () {
+        
+        use crate::db::schema::media::dsl::*;
+
+        // media.filter(uuid.eq(media_uuid)).set(
+
+        // )
     }
 }

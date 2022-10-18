@@ -8,9 +8,10 @@ use crate::db::models::{
 use super::{
     context::GQLContext,
     types::{input::file::FileInput, output::media::MediaType},
+    types::input::media::EditMediaInput
 };
 use crate::graphql::mutations::update_password;
-
+use crate::graphql::mutations::edit_media;
 pub struct Mutation;
 
 impl Mutation {
@@ -89,5 +90,23 @@ impl Mutation {
     /// Changes password for current user
     async fn change_password<'a>(context: &'a GQLContext, password: String) -> FieldResult<bool> {
         update_password::update_password(context, password).await
+    }
+
+    #[graphql(description = "Edit a media")]
+    async fn edit_media<'a>(
+        context: &'a GQLContext,
+        uuid: uuid::Uuid,
+        media: EditMediaInput,
+    ) -> FieldResult<bool> {
+        //  FieldResult<MediaType>
+        if Self::is_authenticated(&context.user) == false {
+            return Err(FieldError::new(
+                "You need to be authenticated to use this mutation",
+                graphql_value!(""),
+            ));
+        }
+
+        edit_media::edit_media(context, uuid, media).await
+
     }
 }

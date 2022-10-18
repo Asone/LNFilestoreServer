@@ -5,7 +5,7 @@ use bcrypt::DEFAULT_COST;
 use chrono::NaiveDateTime;
 use diesel::prelude::*;
 use diesel::PgConnection;
-
+use diesel::result::Error;
 use diesel;
 
 /// User object instance
@@ -39,6 +39,15 @@ impl User {
             .first::<User>(connection)
             .optional()
             .unwrap()
+    }
+
+    pub fn delete_user(
+        user_uuid: uuid::Uuid,
+        connection: &PgConnection
+    ) -> Result<usize, Error> {
+        use crate::db::schema::user::dsl::*;
+
+        diesel::delete(user.filter(uuid.eq(user_uuid))).execute(connection)
     }
 
     pub fn change_password(
