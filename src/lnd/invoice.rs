@@ -1,8 +1,9 @@
 #![allow(deprecated)]
 use chrono::{Duration, NaiveDateTime, Utc};
+use tonic::transport::Channel;
 use std::env;
-use tonic_lnd::rpc::invoice::InvoiceState;
 use tonic::{Code, Status};
+use tonic_lnd::rpc::invoice::InvoiceState;
 use tonic_lnd::rpc::lightning_client::LightningClient;
 use tonic_lnd::rpc::{Invoice, PaymentHash};
 use tonic_lnd::tonic::codegen::InterceptedService;
@@ -78,11 +79,10 @@ impl InvoiceUtils {
        Generate an invoice through lnd
     */
     pub async fn generate_invoice(
-        mut lnd_client: LightningClient<
-            InterceptedService<tonic::transport::Channel, MacaroonInterceptor>,
-        >,
+        mut lnd_client: LightningClient<InterceptedService<Channel, MacaroonInterceptor>>,
         params: InvoiceParams,
     ) -> LndInvoice {
+
         let add_invoice_response = lnd_client.add_invoice(tonic_lnd::rpc::Invoice {
             memo: params.memo,
             value: params.value,
@@ -111,9 +111,7 @@ impl InvoiceUtils {
     //    Gets the invoice state from a payment request string.
     //    It consists as a two steps method.
     pub async fn get_invoice_state_from_payment_request<'a>(
-        lnd_client: &LightningClient<
-            InterceptedService<tonic::transport::Channel, MacaroonInterceptor>,
-        >,
+        lnd_client: &LightningClient<InterceptedService<Channel, MacaroonInterceptor>>,
         payment_request: String,
     ) -> Result<Option<Invoice>, Status> {
         let mut client = lnd_client.clone();
