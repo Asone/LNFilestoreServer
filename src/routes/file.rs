@@ -15,6 +15,7 @@ use uuid::Uuid;
 use crate::{
     db::{
         models::{
+            file::File,
             media::Media,
             media_payment::{MediaPayment, NewMediaPayment},
         },
@@ -35,6 +36,7 @@ pub enum FileHandlingError {
     LNFailure,
     UuidParsingError,
     PaymentRequired,
+    FileNotFound,
 }
 
 /// A route to retrieve files behind the paywall.
@@ -62,9 +64,26 @@ pub async fn get_file(
     // We can so consider the unwrap as safe.
     let media = media.unwrap();
 
-    // If the media exists and is free we should deliver it to the user without performing any further operation
+    // Calls the get_file_entry to try to retrieve the requested file from database
+    let file = get_file_entry(&(media.file_uuid.to_string()), &db).await;
+
+    // Builds the error response if the file could not be retrieved
+    if file.is_err() {
+        return match file.unwrap_err() {
+            FileHandlingError::DbFailure => Err(status::Custom(Status::InternalServerError, None)),
+            FileHandlingError::FileNotFound => Err(status::Custom(Status::NotFound, None)),
+            FileHandlingError::UuidParsingError => Err(status::Custom(Status::BadRequest, None)),
+            _ => Err(status::Custom(Status::ImATeapot, None)),
+        };
+    }
+
+    // There's no reason we could not unwrap the media as the match above should ensure to handle all the error cases.
+    // We can so consider the unwrap as safe.
+    let file = file.unwrap();
+
+    // If the file exists and is free we should deliver it to the user without performing any further operation
     if media.price == 0 {
-        return set_download_responder(media).await;
+        return set_download_responder(file).await;
     }
 
     // Otherwise we ensure try to retrieve an associated payment to the requested media.
@@ -109,7 +128,7 @@ pub async fn get_file(
     let invoice = invoice.unwrap();
 
     match invoice.state() {
-        InvoiceState::Settled => set_download_responder(media).await,
+        InvoiceState::Settled => set_download_responder(file).await,
         InvoiceState::Accepted => Err(status::Custom(Status::NotFound, None)),
         InvoiceState::Canceled => {
             let invoice = request_new_media_payment(&media, lnd, db).await;
@@ -190,6 +209,25 @@ async fn get_media(uuid: &String, db: &PostgresConn) -> Result<Media, FileHandli
     }
 }
 
+// Retrieves file from database
+async fn get_file_entry(uuid: &String, db: &PostgresConn) -> Result<File, FileHandlingError> {
+    let uuid = Uuid::parse_str(uuid.as_str());
+
+    match uuid {
+        Ok(uuid) => {
+            let file = db.run(move |c| File::find_one_by_uuid(uuid, c)).await;
+            match file {
+                Ok(file) => match file {
+                    Some(file) => Ok(file),
+                    None => Err(FileHandlingError::FileNotFound),
+                },
+                Err(_) => Err(FileHandlingError::DbFailure),
+            }
+        }
+        Err(_) => Err(FileHandlingError::UuidParsingError),
+    }
+}
+
 // Retrieves a media payment based on
 async fn get_media_payment(
     payment_request: Option<String>,
@@ -237,9 +275,9 @@ async fn get_invoice(
 }
 
 async fn set_download_responder(
-    media: Media,
+    file: File,
 ) -> Result<DownloadResponder, status::Custom<Option<RawJson<String>>>> {
-    let path = Path::new(&media.absolute_path);
+    let path = Path::new(&file.absolute_path);
     let filename = path.file_name();
 
     match filename {

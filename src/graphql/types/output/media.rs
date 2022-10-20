@@ -1,3 +1,6 @@
+use super::file::FileType;
+use crate::db::media_type_enum::MediaTypeEnum;
+use crate::db::models::file::File;
 use crate::{
     db::models::{
         media::Media,
@@ -12,7 +15,7 @@ use infer::Infer;
 use juniper::Value;
 use juniper::{FieldError, FieldResult};
 use juniper_relay_connection::RelayConnectionNode;
-use std::fs::File;
+use uuid::Uuid;
 
 /// To be deleted
 // #[derive(Clone, Serialize, Deserialize)]
@@ -24,27 +27,65 @@ use std::fs::File;
 //     pub created_at: NaiveDateTime,
 // }
 
+#[derive(GraphQLUnion)]
+#[graphql(Context = GQLContext)]
+pub enum MediaUnion {
+    Default(DefaultMedia),
+    Audio(AudioMedia),
+    Video(VideoMedia),
+    Pdf(PdfMedia),
+    Epub(EpubMedia),
+}
+
+impl From<Media> for MediaUnion {
+    fn from(item: Media) -> MediaUnion {
+        match item.type_ {
+            // MediaTypeEnum::Audio => todo!(),
+            // MediaTypeEnum::Video => todo!(),
+            // MediaTypeEnum::Pdf => todo!(),
+            // MediaTypeEnum::Epub => todo!(),
+            // MediaTypeEnum::Image => todo!(),
+            _ => MediaUnion::Default(DefaultMedia {
+                uuid: item.uuid,
+                title: item.title,
+                file_uuid: item.file_uuid,
+                description: item.description,
+                price: item.price,
+                published: item.published,
+                created_at: item.created_at,
+            }),
+        }
+    }
+}
+
 #[derive(Clone)]
 pub struct MediaType {
     pub uuid: uuid::Uuid,
     pub title: String,
     pub description: Option<String>,
+    pub file_uuid: uuid::Uuid,
     pub price: i32,
     pub published: bool,
     pub created_at: NaiveDateTime,
-    absolute_path: String,
 }
 
 impl From<Media> for MediaType {
     fn from(item: Media) -> Self {
-        Self {
-            uuid: item.uuid,
-            title: item.title,
-            description: item.description,
-            price: item.price,
-            published: item.published,
-            created_at: item.created_at,
-            absolute_path: item.absolute_path,
+        match item.type_ {
+            MediaTypeEnum::Audio => todo!(),
+            MediaTypeEnum::Video => todo!(),
+            MediaTypeEnum::Pdf => todo!(),
+            MediaTypeEnum::Epub => todo!(),
+            MediaTypeEnum::Image => todo!(),
+            _ => Self {
+                uuid: item.uuid,
+                title: item.title,
+                file_uuid: item.file_uuid,
+                description: item.description,
+                price: item.price,
+                published: item.published,
+                created_at: item.created_at,
+            },
         }
     }
 }
@@ -56,11 +97,11 @@ impl From<(Media, String)> for MediaType {
         Self {
             uuid: media.uuid,
             title: media.title,
+            file_uuid: media.file_uuid,
             description: media.description,
             price: media.price,
             published: media.published,
             created_at: media.created_at,
-            absolute_path: media.absolute_path,
         }
     }
 }
@@ -137,32 +178,116 @@ impl MediaType {
         let uri = format!("/file/{}", &self.uuid);
         Ok(uri)
     }
-    #[graphql(description = "The file type")]
-    fn file_type(&self) -> Option<&str> {
-        let info = Infer::new();
-        let kind = info.get_from_path(&self.absolute_path);
 
-        match kind {
+    #[graphql(description = "")]
+    async fn file<'a>(&self, context: &'a GQLContext) -> FieldResult<FileType> {
+        let file_uuid = self.file_uuid;
+        let object = context
+            .get_db_connection()
+            .run(move |c| File::find_one_by_uuid(file_uuid, c))
+            .await;
+
+        match object {
             Ok(result) => match result {
-                Some(t) => return Some(t.extension()),
-                None => return None,
+                Some(result) => Ok(FileType::from(result)),
+                None => Err(FieldError::new(
+                    "No File object found for current media",
+                    Value::Null,
+                )),
             },
-            Err(_) => return None,
+            Err(_) => Err(FieldError::new(
+                "Could not retrieve object from database",
+                Value::Null,
+            )),
         }
     }
+    // #[graphql(description = "The file type")]
+    // fn file_type(&self) -> Option<&str> {
+    //     let info = Infer::new();
+    //     let kind = info.get_from_path(&self.absolute_path);
 
-    #[graphql(description = "The file size")]
-    fn file_size(&self) -> Option<i32> {
-        let file = File::open(&self.absolute_path);
+    //     match kind {
+    //         Ok(result) => match result {
+    //             Some(t) => return Some(t.extension()),
+    //             None => return None,
+    //         },
+    //         Err(_) => return None,
+    //     }
+    // }
 
-        match file {
-            Ok(file) => {
-                let size = file.metadata().unwrap().len().to_string();
-                Some(size.parse::<i32>().unwrap_or(0))
-            }
-            Err(_) => None,
-        }
-    }
+    // #[graphql(description = "The file size")]
+    // fn file_size(&self) -> Option<i32> {
+    //     let file = File::open(&self.absolute_path);
+
+    //     match file {
+    //         Ok(file) => {
+    //             let size = file.metadata().unwrap().len().to_string();
+    //             Some(size.parse::<i32>().unwrap_or(0))
+    //         }
+    //         Err(_) => None,
+    //     }
+    // }
+}
+
+#[derive(GraphQLObject)]
+pub struct DefaultMedia {
+    pub uuid: uuid::Uuid,
+    pub title: String,
+    pub description: Option<String>,
+    pub file_uuid: uuid::Uuid,
+    pub price: i32,
+    pub published: bool,
+    pub created_at: NaiveDateTime,
+}
+#[derive(GraphQLObject)]
+pub struct AudioMedia {
+    pub uuid: uuid::Uuid,
+    pub title: String,
+    pub description: Option<String>,
+    pub file_uuid: uuid::Uuid,
+    pub price: i32,
+    pub published: bool,
+    pub created_at: NaiveDateTime,
+}
+#[derive(GraphQLObject)]
+pub struct VideoMedia {
+    pub uuid: uuid::Uuid,
+    pub title: String,
+    pub description: Option<String>,
+    pub file_uuid: uuid::Uuid,
+    pub price: i32,
+    pub published: bool,
+    pub created_at: NaiveDateTime,
+}
+#[derive(GraphQLObject)]
+pub struct EpubMedia {
+    pub uuid: uuid::Uuid,
+    pub title: String,
+    pub description: Option<String>,
+    pub file_uuid: uuid::Uuid,
+    pub price: i32,
+    pub published: bool,
+    pub created_at: NaiveDateTime,
+}
+#[derive(GraphQLObject)]
+pub struct PdfMedia {
+    pub uuid: uuid::Uuid,
+    pub title: String,
+    pub description: Option<String>,
+    pub file_uuid: uuid::Uuid,
+    pub price: i32,
+    pub published: bool,
+    pub created_at: NaiveDateTime,
+}
+#[derive(GraphQLObject)]
+pub struct ImageMedia {
+    pub uuid: uuid::Uuid,
+    pub title: String,
+    pub description: Option<String>,
+    pub file_uuid: uuid::Uuid,
+    pub price: i32,
+    pub published: bool,
+    pub created_at: NaiveDateTime,
 }
 
 /// Implements relay connection for Medias
@@ -181,5 +306,30 @@ impl RelayConnectionNode for MediaType {
 
     fn edge_type_name() -> &'static str {
         "MediaConnectionEdge"
+    }
+}
+
+impl RelayConnectionNode for MediaUnion {
+    type Cursor = String;
+
+    fn cursor(&self) -> Self::Cursor {
+        let uuid = match self {
+            MediaUnion::Default(instance) => instance.uuid,
+            MediaUnion::Audio(instance) => instance.uuid,
+            MediaUnion::Video(instance) => instance.uuid,
+            MediaUnion::Pdf(instance) => instance.uuid,
+            MediaUnion::Epub(instance) => instance.uuid,
+        };
+
+        let cursor = format!("media:{}", uuid);
+        base64::encode(cursor)
+    }
+
+    fn connection_type_name() -> &'static str {
+        "MediaUnionConnection"
+    }
+
+    fn edge_type_name() -> &'static str {
+        "MediaUnionConnectionEdge"
     }
 }

@@ -3,9 +3,9 @@ use super::queries::get_files_relay::get_files_list_relay;
 use super::queries::get_media::get_media;
 use super::queries::request_invoice_for_media::request_invoice_for_media;
 use super::types::output::media::MediaType;
-use crate::db::models::media::Media;
 use crate::graphql::context::GQLContext;
 use crate::graphql::types::output::invoices::MediaInvoice;
+use crate::{db::models::media::Media, graphql::types::output::media::MediaUnion};
 use juniper::{FieldError, FieldResult};
 use juniper_relay_connection::RelayConnection;
 use uuid::Uuid;
@@ -42,18 +42,18 @@ impl Query {
     }
 
     #[graphql(description = "Gets the list of available medias")]
-    async fn get_medias_list(context: &'a GQLContext) -> Result<Vec<MediaType>, FieldError> {
+    async fn get_medias_list(context: &'a GQLContext) -> Result<Vec<MediaUnion>, FieldError> {
         let connection = context.get_db_connection();
         let db_results = connection.run(move |c| Media::find_all_published(c)).await;
 
         Ok(db_results
             .into_iter()
-            .map(|media| MediaType::from(media))
-            .collect::<Vec<MediaType>>())
+            .map(|media| MediaUnion::from(media))
+            .collect::<Vec<MediaUnion>>())
     }
 
     #[graphql(description = "Gets available files with relay pagination")]
-    async fn get_files_relay(context: &'a GQLContext) -> FieldResult<RelayConnection<MediaType>> {
+    async fn get_files_relay(context: &'a GQLContext) -> FieldResult<RelayConnection<MediaUnion>> {
         get_files_list_relay(context, None, None, None, None).await
     }
 }

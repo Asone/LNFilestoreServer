@@ -3,6 +3,7 @@ use rocket_sync_db_pools::{database, diesel};
 use self::models::api_payment::ApiPayment;
 
 pub mod igniter;
+pub mod media_type_enum;
 pub mod models;
 pub mod schema;
 

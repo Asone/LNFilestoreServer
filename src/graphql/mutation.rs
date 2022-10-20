@@ -7,7 +7,10 @@ use crate::db::models::{
 
 use super::{
     context::GQLContext,
-    types::{input::file::FileInput, output::media::MediaType},
+    types::{
+        input::file::FileInput,
+        output::media::{MediaType, MediaUnion},
+    },
 };
 use crate::graphql::mutations::update_password;
 
@@ -24,6 +27,22 @@ impl Mutation {
 
 #[juniper::graphql_object(context = GQLContext)]
 impl Mutation {
+    // // Allows upload
+    // async fn upload<'a>(
+    //     context: &'a GQLContext,
+    //     file_input: FileInput
+    //     ) -> FieldResult<MediaUnion> {
+
+    //     // Restrict mutation to authenticated users
+    //     if Self::is_authenticated(&context.user) == false {
+    //         return Err(FieldError::new(
+    //             "You need to be authenticated to use this mutation",
+    //             graphql_value!(""),
+    //         ));
+    //     }
+
+    // }
+
     #[graphql(description = "Upload and stores a payable media onto the server")]
     async fn upload_file<'a>(
         context: &'a GQLContext,

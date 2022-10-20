@@ -1,4 +1,5 @@
 pub mod api_payment;
+pub mod file;
 pub mod media;
 pub mod media_payment;
 pub mod session;
