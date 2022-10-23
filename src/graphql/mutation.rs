@@ -7,11 +7,11 @@ use crate::db::models::{
 
 use super::{
     context::GQLContext,
+    types::input::media::EditMediaInput,
     types::{input::file::FileInput, output::media::MediaType},
-    types::input::media::EditMediaInput
 };
-use crate::graphql::mutations::update_password;
 use crate::graphql::mutations::edit_media;
+use crate::graphql::mutations::update_password;
 pub struct Mutation;
 
 impl Mutation {
@@ -107,6 +107,5 @@ impl Mutation {
         }
 
         edit_media::edit_media(context, uuid, media).await
-
     }
 }

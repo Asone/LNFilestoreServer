@@ -6,8 +6,8 @@ use chrono::NaiveDateTime;
 use diesel;
 use diesel::prelude::*;
 use diesel::PgConnection;
-use uuid::Uuid;
 use std::path::PathBuf;
+use uuid::Uuid;
 
 #[derive(Identifiable, Queryable, PartialEq, Debug)]
 #[primary_key(uuid)]
@@ -36,17 +36,15 @@ pub struct NewMedia {
 
 #[derive(Debug, Queryable, AsChangeset)]
 #[table_name = "media"]
-pub struct EditMedia{
+pub struct EditMedia {
     pub title: Option<String>,
     pub description: Option<String>,
     pub published: Option<bool>,
     pub price: Option<i32>,
 }
 
-impl From<EditMediaInput> for EditMedia{
-
+impl From<EditMediaInput> for EditMedia {
     fn from(edited_media: EditMediaInput) -> Self {
-        
         Self {
             title: edited_media.title,
             description: edited_media.description,
@@ -97,16 +95,20 @@ impl Media {
 
     pub fn update(
         media_uuid: Uuid,
-        edited_media_input:EditMediaInput,
-        connection: &PgConnection
+        edited_media_input: EditMediaInput,
+        connection: &PgConnection,
     ) -> QueryResult<Media> {
-        
         use crate::db::schema::media::dsl::*;
 
-        diesel::update(media
-        .filter(uuid.eq(media_uuid)))
-        .set(EditMedia::from(edited_media_input))
-        .get_result::<Media>(connection)
+        diesel::update(media.filter(uuid.eq(media_uuid)))
+            .set(EditMedia::from(edited_media_input))
+            .get_result::<Media>(connection)
+    }
 
+    pub fn delete(media_uuid: Uuid, connection: &PgConnection) -> QueryResult<usize> {
+        use crate::db::schema::media::dsl::*;
+        diesel::delete(media)
+            .filter(uuid.eq(media_uuid))
+            .execute(connection)
     }
 }
