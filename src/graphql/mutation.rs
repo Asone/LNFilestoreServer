@@ -97,7 +97,7 @@ impl Mutation {
         context: &'a GQLContext,
         uuid: uuid::Uuid,
         media: EditMediaInput,
-    ) -> FieldResult<bool> {
+    ) -> FieldResult<MediaType> {
         //  FieldResult<MediaType>
         if Self::is_authenticated(&context.user) == false {
             return Err(FieldError::new(

@@ -1,6 +1,7 @@
 pub use crate::db::schema::media;
 
 use crate::graphql::types::input::file::FileInput;
+use crate::graphql::types::input::media::EditMediaInput;
 use chrono::NaiveDateTime;
 use diesel;
 use diesel::prelude::*;
@@ -31,6 +32,28 @@ pub struct NewMedia {
     pub absolute_path: String,
     pub published: bool,
     pub price: i32,
+}
+
+#[derive(Debug, Queryable, AsChangeset)]
+#[table_name = "media"]
+pub struct EditMedia{
+    pub title: Option<String>,
+    pub description: Option<String>,
+    pub published: Option<bool>,
+    pub price: Option<i32>,
+}
+
+impl From<EditMediaInput> for EditMedia{
+
+    fn from(edited_media: EditMediaInput) -> Self {
+        
+        Self {
+            title: edited_media.title,
+            description: edited_media.description,
+            published: edited_media.published,
+            price: edited_media.price,
+        }
+    }
 }
 
 impl From<(&PathBuf, FileInput)> for NewMedia {
@@ -73,13 +96,17 @@ impl Media {
     }
 
     pub fn update(
-        media_uuid: Uuid
-    ) -> () {
+        media_uuid: Uuid,
+        edited_media_input:EditMediaInput,
+        connection: &PgConnection
+    ) -> QueryResult<Media> {
         
         use crate::db::schema::media::dsl::*;
 
-        // media.filter(uuid.eq(media_uuid)).set(
+        diesel::update(media
+        .filter(uuid.eq(media_uuid)))
+        .set(EditMedia::from(edited_media_input))
+        .get_result::<Media>(connection)
 
-        // )
     }
 }
