@@ -1,12 +1,14 @@
 pub use crate::db::schema::session;
 use crate::db::schema::user;
+use crate::graphql::types::input::user::EditUserInput;
+use crate::graphql::types::input::user::NewUserInput;
 use bcrypt::hash;
 use bcrypt::DEFAULT_COST;
 use chrono::NaiveDateTime;
-use diesel::prelude::*;
-use diesel::PgConnection;
-use diesel::result::Error;
 use diesel;
+use diesel::prelude::*;
+use diesel::result::Error;
+use diesel::PgConnection;
 
 /// User object instance
 #[derive(Identifiable, Queryable, PartialEq, Clone)]
@@ -21,30 +23,52 @@ pub struct User {
     pub updated_at: NaiveDateTime,
 }
 
+#[derive(Debug, AsChangeset)]
+#[table_name = "user"]
+pub struct EditUser {
+    pub password: Option<String>,
+    pub email: Option<String>,
+}
+
+impl From<EditUserInput> for EditUser {
+    fn from(user: EditUserInput) -> Self {
+        Self {
+            email: user.email,
+            password: user.password,
+        }
+    }
+}
+
+#[derive(Debug, Insertable)]
+#[table_name = "user"]
+pub struct NewUser {
+    pub login: String,
+    pub email: String,
+    pub password: String,
+}
+
 impl User {
-    /// Finds a user based on its login
-    pub fn find_one_by_username(username: String, connection: &PgConnection) -> Option<User> {
+    pub fn create(new_user: NewUser, connection: &PgConnection) -> QueryResult<User> {
         use crate::db::schema::user::dsl::*;
 
-        user.filter(login.eq(username))
-            .first::<User>(connection)
-            .optional()
-            .unwrap()
+        diesel::insert_into::<user>(user)
+            .values(&new_user)
+            .get_result(connection)
     }
 
-    pub fn find_one_by_uuid(user_uuid: uuid::Uuid, connection: &PgConnection) -> Option<User> {
-        use crate::db::schema::user::dsl::*;
-
-        user.filter(uuid.eq(user_uuid))
-            .first::<User>(connection)
-            .optional()
-            .unwrap()
-    }
-
-    pub fn delete_user(
+    pub fn update(
         user_uuid: uuid::Uuid,
-        connection: &PgConnection
-    ) -> Result<usize, Error> {
+        edited_user: EditUser,
+        connection: &PgConnection,
+    ) -> QueryResult<User> {
+        use crate::db::schema::user::dsl::*;
+
+        diesel::update(user.filter(uuid.eq(user_uuid)))
+            .set(edited_user)
+            .get_result::<User>(connection)
+    }
+
+    pub fn delete(user_uuid: uuid::Uuid, connection: &PgConnection) -> Result<usize, Error> {
         use crate::db::schema::user::dsl::*;
 
         diesel::delete(user.filter(uuid.eq(user_uuid))).execute(connection)
@@ -61,5 +85,38 @@ impl User {
         diesel::update(user.filter(uuid.eq(user_uuid)))
             .set(password.eq(hashed_password))
             .get_result::<User>(connection)
+    }
+
+    pub fn find_one_by_username(username: String, connection: &PgConnection) -> Option<User> {
+        use crate::db::schema::user::dsl::*;
+
+        user.filter(login.eq(username))
+            .first::<User>(connection)
+            .optional()
+            .unwrap()
+    }
+
+    pub fn find_one_by_uuid(
+        user_uuid: uuid::Uuid,
+        connection: &PgConnection,
+    ) -> QueryResult<Option<User>> {
+        use crate::db::schema::user::dsl::*;
+
+        user.filter(uuid.eq(user_uuid))
+            .first::<User>(connection)
+            .optional()
+    }
+
+    pub fn find_one_by_username_or_email(
+        username: String,
+        user_email: String,
+        connection: &PgConnection,
+    ) -> Result<Option<User>> {
+        use crate::db::schema::user::dsl::*;
+
+        user.filter(login.eq(username))
+            .or_filter(email.eq(user_email))
+            .first::<User>(connection)
+            .optional()
     }
 }
