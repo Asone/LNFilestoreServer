@@ -10,19 +10,6 @@ use diesel::prelude::*;
 use diesel::result::Error;
 use diesel::PgConnection;
 
-/// User object instance
-#[derive(Identifiable, Queryable, PartialEq, Clone)]
-#[primary_key(uuid)]
-#[table_name = "user"]
-pub struct User {
-    pub uuid: uuid::Uuid,
-    pub login: String,
-    pub email: String,
-    pub password: String,
-    pub created_at: NaiveDateTime,
-    pub updated_at: NaiveDateTime,
-}
-
 #[derive(Debug, AsChangeset)]
 #[table_name = "user"]
 pub struct EditUser {
@@ -45,6 +32,29 @@ pub struct NewUser {
     pub login: String,
     pub email: String,
     pub password: String,
+}
+
+impl From<NewUserInput> for NewUser {
+    fn from(new_user: NewUserInput) -> Self {
+        Self {
+            login: new_user.login,
+            email: new_user.email,
+            password: new_user.password,
+        }
+    }
+}
+
+/// User object instance
+#[derive(Identifiable, Queryable, PartialEq, Clone)]
+#[primary_key(uuid)]
+#[table_name = "user"]
+pub struct User {
+    pub uuid: uuid::Uuid,
+    pub login: String,
+    pub email: String,
+    pub password: String,
+    pub created_at: NaiveDateTime,
+    pub updated_at: NaiveDateTime,
 }
 
 impl User {
@@ -111,7 +121,7 @@ impl User {
         username: String,
         user_email: String,
         connection: &PgConnection,
-    ) -> Result<Option<User>> {
+    ) -> QueryResult<Option<User>> {
         use crate::db::schema::user::dsl::*;
 
         user.filter(login.eq(username))

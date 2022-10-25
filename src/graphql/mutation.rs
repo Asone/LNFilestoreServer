@@ -1,20 +1,17 @@
 use juniper::{FieldError, FieldResult, Value};
 
-use crate::{
-    db::models::{
-        media::{Media, NewMedia},
-        user::User,
-    },
-    graphql::types::{input::user::NewUserInput, output::user::UserType},
-};
+use crate::graphql::types::input::user::EditUserInput;
+use crate::{db::models::user::User, graphql::mutations::upload_file};
 
 use super::{
-    context::GQLContext,
-    types::input::media::EditMediaInput,
-    types::{input::file::FileInput, output::media::MediaType},
+    context::GQLContext, types::input::file::FileInput, types::input::media::EditMediaInput,
+    types::input::user::NewUserInput, types::output::media::MediaType,
+    types::output::user::UserType,
 };
 use crate::graphql::mutations::create_user;
+use crate::graphql::mutations::delete_user;
 use crate::graphql::mutations::edit_media;
+use crate::graphql::mutations::edit_user;
 use crate::graphql::mutations::update_password;
 pub struct Mutation;
 
@@ -29,6 +26,49 @@ impl Mutation {
 
 #[juniper::graphql_object(context = GQLContext)]
 impl Mutation {
+    #[graphql(description = "Creates a user")]
+    async fn create_user<'a>(
+        context: &'a GQLContext,
+        new_user_input: NewUserInput,
+    ) -> FieldResult<UserType> {
+        if Self::is_authenticated(&context.user) == false {
+            return Err(FieldError::new(
+                "You need to be authenticated to use this mutation",
+                Value::null(),
+            ));
+        }
+
+        create_user::create_user(context, new_user_input).await
+    }
+
+    #[graphql(description = "Edits a user")]
+    async fn edit_user<'a>(
+        context: &'a GQLContext,
+        uuid: uuid::Uuid,
+        edit_user_input: EditUserInput,
+    ) -> FieldResult<UserType> {
+        if Self::is_authenticated(&context.user) == false {
+            return Err(FieldError::new(
+                "You need to be authenticated to use this mutation",
+                Value::null(),
+            ));
+        }
+
+        edit_user::edit_user(context, uuid, edit_user_input).await
+    }
+
+    #[graphql(description = "Deletes a user")]
+    async fn delete_user<'a>(context: &'a GQLContext, uuid: uuid::Uuid) -> FieldResult<bool> {
+        if Self::is_authenticated(&context.user) == false {
+            return Err(FieldError::new(
+                "You need to be authenticated to use this mutation",
+                Value::null(),
+            ));
+        }
+
+        delete_user::delete_user(context, uuid).await
+    }
+
     #[graphql(description = "Upload and stores a payable media onto the server")]
     async fn upload_file<'a>(
         context: &'a GQLContext,
@@ -37,61 +77,14 @@ impl Mutation {
         if Self::is_authenticated(&context.user) == false {
             return Err(FieldError::new(
                 "You need to be authenticated to use this mutation",
-                graphql_value!(""),
+                Value::null(),
             ));
         }
 
-        let files_map = context.get_files();
-        let connection = context.get_db_connection();
-
-        match files_map {
-            Some(files_map) => {
-
-                if files_map.len() == 0 {
-                    return Err(FieldError::new(
-                        "Current mutation requires a single file for upload. No file provided",
-                        graphql_value!("")
-                    ))
-                }
-
-                let file = files_map.into_iter().next();
-
-                match file {
-                    Some(file) => {
-                        let persisted_path = file.1.persist_file();
-
-                        match persisted_path {
-                            Ok(path) => {
-                                let new_media = NewMedia::from((&path,file_input));
-                                let media =  connection.run(move |c| Media::create(new_media,c)).await;
-                                match media {
-                                    Ok(media) => Ok(MediaType::from(media)),
-                                    Err(_) => Err(FieldError::new(
-                                        "Error while persisting file. Aborting",
-                                        Value::Null
-                                    ))
-                                }
-                            },
-                            Err(_) => Err(FieldError::new("Error while writing file on filesystem.",
-                    Value::Null
-                            ))
-                        }
-
-                    },
-                    None => Err(FieldError::new(
-                        "Current mutation requires a single file for upload. No file provided",
-                        Value::Null
-                    ))
-                }
-            },
-            None => Err(FieldError::new(
-                        "Current mutation accepts a single file for upload. Multiple files uploaded provided",
-                        Value::Null
-                    ))
-        }
+        upload_file::upload_file(context, file_input).await
     }
 
-    /// Changes password for current user
+    // Changes password for current user
     async fn change_password<'a>(context: &'a GQLContext, password: String) -> FieldResult<bool> {
         update_password::update_password(context, password).await
     }
@@ -102,31 +95,13 @@ impl Mutation {
         uuid: uuid::Uuid,
         media: EditMediaInput,
     ) -> FieldResult<MediaType> {
-        //  FieldResult<MediaType>
         if Self::is_authenticated(&context.user) == false {
             return Err(FieldError::new(
                 "You need to be authenticated to use this mutation",
-                graphql_value!(""),
+                Value::null(),
             ));
         }
 
         edit_media::edit_media(context, uuid, media).await
-    }
-
-    #[graphql(description = "Creates a user")]
-    async fn create_user<'a>(
-        context: &'a GQLContext,
-        uuid: uuid::Uuid,
-        new_user_input: NewUserInput,
-    ) -> FieldResult<UserType> {
-        //  FieldResult<MediaType>
-        if Self::is_authenticated(&context.user) == false {
-            return Err(FieldError::new(
-                "You need to be authenticated to use this mutation",
-                Value::Null,
-            ));
-        }
-
-        create_user::create_user(context, new_user_input).await
     }
 }

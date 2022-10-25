@@ -1,4 +1,4 @@
-#[derive(Clone, GraphQLInputObject)]
+#[derive(GraphQLInputObject, Clone)]
 pub struct NewUserInput {
     pub login: String,
     pub email: String,

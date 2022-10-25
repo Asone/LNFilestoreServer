@@ -14,10 +14,11 @@ pub async fn create_user<'a>(
 ) -> FieldResult<UserType> {
     let connection = context.get_db_connection();
 
-    let result = &connection
-        .run(move |c| {
-            User::find_one_by_username_or_email(new_user_input.login, new_user_input.email, c)
-        })
+    let login = new_user_input.login.clone();
+    let email = new_user_input.email.clone();
+
+    let result = connection
+        .run(move |c| User::find_one_by_username_or_email(login, email, c))
         .await;
 
     if result.is_err() {
@@ -37,7 +38,9 @@ pub async fn create_user<'a>(
             ));
         }
         None => {
-            let user = &connection
+            let connection = context.get_db_connection();
+
+            let user = connection
                 .run(move |c| User::create(NewUser::from(new_user_input), c))
                 .await;
 
@@ -48,9 +51,7 @@ pub async fn create_user<'a>(
                 ));
             }
 
-            let user = user.unwrap();
-
-            Ok(UserType::from(user))
+            Ok(UserType::from(user.unwrap()))
         }
     }
 }

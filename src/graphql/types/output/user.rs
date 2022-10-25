@@ -2,6 +2,8 @@ use chrono::NaiveDateTime;
 
 use crate::db::models::user::User;
 
+#[derive(GraphQLObject)]
+#[graphql(description = "Represents a user")]
 pub struct UserType {
     pub uuid: uuid::Uuid,
     pub login: String,
