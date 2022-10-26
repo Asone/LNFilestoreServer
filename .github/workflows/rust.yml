@@ -23,23 +23,15 @@ jobs:
           toolchain: 1.57
           override: true
           components: rustc
-    - name: Restore cache
-      id: cache-cargo
+    - name: ⚡ Cache
       uses: actions/cache@v3
       with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-        path:
-          target/
-        restore-keys: |
-          ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-
     - name: Build
       run: cargo build --verbose
     - name: Run tests
       run: cargo test --verbose
-    - name: Stores dependency cache
-      uses: actions/cache@v3
-      with:
-        path: |
-          target/
-        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
