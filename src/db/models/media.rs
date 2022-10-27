@@ -1,11 +1,13 @@
 pub use crate::db::schema::media;
 
 use crate::graphql::types::input::file::FileInput;
+use crate::graphql::types::input::media::EditMediaInput;
 use chrono::NaiveDateTime;
 use diesel;
 use diesel::prelude::*;
 use diesel::PgConnection;
 use std::path::PathBuf;
+use uuid::Uuid;
 
 #[derive(Identifiable, Queryable, PartialEq, Debug)]
 #[primary_key(uuid)]
@@ -30,6 +32,26 @@ pub struct NewMedia {
     pub absolute_path: String,
     pub published: bool,
     pub price: i32,
+}
+
+#[derive(Debug, Queryable, AsChangeset)]
+#[table_name = "media"]
+pub struct EditMedia {
+    pub title: Option<String>,
+    pub description: Option<String>,
+    pub published: Option<bool>,
+    pub price: Option<i32>,
+}
+
+impl From<EditMediaInput> for EditMedia {
+    fn from(edited_media: EditMediaInput) -> Self {
+        Self {
+            title: edited_media.title,
+            description: edited_media.description,
+            published: edited_media.published,
+            price: edited_media.price,
+        }
+    }
 }
 
 impl From<(&PathBuf, FileInput)> for NewMedia {
@@ -69,5 +91,24 @@ impl Media {
             .filter(uuid.eq(media_uuid))
             .first::<Media>(connection)
             .optional()
+    }
+
+    pub fn update(
+        media_uuid: Uuid,
+        edited_media_input: EditMediaInput,
+        connection: &PgConnection,
+    ) -> QueryResult<Media> {
+        use crate::db::schema::media::dsl::*;
+
+        diesel::update(media.filter(uuid.eq(media_uuid)))
+            .set(EditMedia::from(edited_media_input))
+            .get_result::<Media>(connection)
+    }
+
+    pub fn delete(media_uuid: Uuid, connection: &PgConnection) -> QueryResult<usize> {
+        use crate::db::schema::media::dsl::*;
+        diesel::delete(media)
+            .filter(uuid.eq(media_uuid))
+            .execute(connection)
     }
 }

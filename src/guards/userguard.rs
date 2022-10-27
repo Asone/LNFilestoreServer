@@ -84,7 +84,14 @@ impl<'r> FromRequest<'r> for UserGuard {
                                                     })
                                                     .await;
 
-                                                Outcome::Success(UserGuard(user))
+                                                if user.is_err() {
+                                                    return Outcome::Failure((
+                                                        Status::InternalServerError,
+                                                        (),
+                                                    ));
+                                                };
+
+                                                Outcome::Success(UserGuard(user.unwrap()))
                                             }
                                             Err(_) => {
                                                 Outcome::Failure((Status::InternalServerError, ()))
