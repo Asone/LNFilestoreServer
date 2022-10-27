@@ -8,7 +8,7 @@ use crate::{
     forms::login_user::LoginUser,
 };
 
-use std::{env};
+use std::env;
 
 /// Authentication route
 #[rocket::post("/auth", data = "<user_form>")]
@@ -40,26 +40,21 @@ fn same_site_cookie() -> SameSite {
     let cookie_same_site_policy = env::var("COOKIES_SAME_SITE_POLICY");
 
     match cookie_same_site_policy {
-        Ok(value) => {
-            match value.as_str(){
-                "lax" => SameSite::Lax,
-                "none" => SameSite::None,
-                "strict" => SameSite::Strict,
-                _ => SameSite::Lax
-            }
-        }
-        Err(_) => SameSite::Lax
-}
-
+        Ok(value) => match value.as_str() {
+            "lax" => SameSite::Lax,
+            "none" => SameSite::None,
+            "strict" => SameSite::Strict,
+            _ => SameSite::Lax,
+        },
+        Err(_) => SameSite::Lax,
+    }
 }
 /// Secures cookie based on environment
 fn secure_cookie() -> bool {
     let cookie_is_secure = env::var("COOKIES_IS_SECURE_POLICY_POLICY");
 
     match cookie_is_secure {
-        Ok(value) => {
-            value.parse::<bool>().unwrap_or(false)
-        },
-        Err(_) => false
+        Ok(value) => value.parse::<bool>().unwrap_or(false),
+        Err(_) => false,
     }
 }

@@ -1,7 +1,7 @@
 #![allow(deprecated)]
 use chrono::{Duration, NaiveDateTime, Utc};
-use tonic::transport::Channel;
 use std::env;
+use tonic::transport::Channel;
 use tonic::{Code, Status};
 use tonic_lnd::rpc::invoice::InvoiceState;
 use tonic_lnd::rpc::lightning_client::LightningClient;
@@ -82,7 +82,6 @@ impl InvoiceUtils {
         mut lnd_client: LightningClient<InterceptedService<Channel, MacaroonInterceptor>>,
         params: InvoiceParams,
     ) -> LndInvoice {
-
         let add_invoice_response = lnd_client.add_invoice(tonic_lnd::rpc::Invoice {
             memo: params.memo,
             value: params.value,

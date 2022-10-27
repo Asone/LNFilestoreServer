@@ -1,7 +1,7 @@
 use juniper::{FieldError, FieldResult, Value};
 
+use crate::db::models::user::User;
 use crate::graphql::types::input::user::EditUserInput;
-use crate::{db::models::user::User, graphql::mutations::upload_file};
 
 use super::{
     context::GQLContext, types::input::file::FileInput, types::input::media::EditMediaInput,
@@ -9,10 +9,13 @@ use super::{
     types::output::user::UserType,
 };
 use crate::graphql::mutations::create_user;
+use crate::graphql::mutations::delete_media;
 use crate::graphql::mutations::delete_user;
 use crate::graphql::mutations::edit_media;
 use crate::graphql::mutations::edit_user;
 use crate::graphql::mutations::update_password;
+use crate::graphql::mutations::upload_file;
+
 pub struct Mutation;
 
 impl Mutation {
@@ -84,11 +87,6 @@ impl Mutation {
         upload_file::upload_file(context, file_input).await
     }
 
-    // Changes password for current user
-    async fn change_password<'a>(context: &'a GQLContext, password: String) -> FieldResult<bool> {
-        update_password::update_password(context, password).await
-    }
-
     #[graphql(description = "Edit a media")]
     async fn edit_media<'a>(
         context: &'a GQLContext,
@@ -103,5 +101,22 @@ impl Mutation {
         }
 
         edit_media::edit_media(context, uuid, media).await
+    }
+
+    #[graphql(description = "Deletes a media")]
+    async fn delete_media<'a>(context: &'a GQLContext, uuid: uuid::Uuid) -> FieldResult<bool> {
+        if Self::is_authenticated(&context.user) == false {
+            return Err(FieldError::new(
+                "You need to be authenticated to use this mutation",
+                Value::null(),
+            ));
+        }
+
+        delete_media::delete_media(context, uuid).await
+    }
+
+    // Changes password for current user
+    async fn change_password<'a>(context: &'a GQLContext, password: String) -> FieldResult<bool> {
+        update_password::update_password(context, password).await
     }
 }

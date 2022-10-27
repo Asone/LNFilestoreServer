@@ -13,16 +13,12 @@ use diesel::PgConnection;
 #[derive(Debug, AsChangeset)]
 #[table_name = "user"]
 pub struct EditUser {
-    pub password: Option<String>,
     pub email: Option<String>,
 }
 
 impl From<EditUserInput> for EditUser {
     fn from(user: EditUserInput) -> Self {
-        Self {
-            email: user.email,
-            password: user.password,
-        }
+        Self { email: user.email }
     }
 }
 
