@@ -1,5 +1,6 @@
 #![recursion_limit = "1024"]
-
+#[cfg(test)]
+mod tests;
 #[macro_use]
 extern crate juniper;
 
@@ -33,7 +34,7 @@ use app::Schema;
 use db::igniter::run_db_migrations;
 use dotenv::dotenv;
 use juniper::EmptySubscription;
-use rocket::Rocket;
+use rocket::{Rocket, Build};
 use rocket::{fairing::AdHoc, Route};
 use routes::{auth::login, file::get_file, utils::graphiql, utils::static_index};
 use std::env;
@@ -60,7 +61,14 @@ async fn main() -> Result<(), rocket::Error> {
     dotenv().ok();
     config::init();
 
-    let _rocket = Rocket::build()
+    let rocket = app_build().launch()
+        .await
+        .expect("server to launch");
+    Ok(())
+}
+
+fn app_build() -> Rocket<Build> {
+    let rocket = Rocket::build()
         .attach(PostgresConn::fairing())
         .attach(Cors)
         .attach(AdHoc::try_on_ignite(
@@ -75,12 +83,10 @@ async fn main() -> Result<(), rocket::Error> {
             Mutation,
             EmptySubscription::<GQLContext>::new(),
         ))
-        .mount("/", routes_builder())
-        .launch()
-        .await
-        .expect("server to launch");
+        .mount("/", routes_builder());
 
-    Ok(())
+    return rocket;
+
 }
 
 fn routes_builder() -> Vec<Route> {

@@ -6,7 +6,12 @@ pub mod igniter;
 pub mod models;
 pub mod schema;
 
+#[cfg(not(test))]
 #[database("main_db")]
+pub struct PostgresConn(pub diesel::PgConnection);
+
+#[cfg(test)]
+#[database("test_db")]
 pub struct PostgresConn(pub diesel::PgConnection);
 
 impl PostgresConn {
