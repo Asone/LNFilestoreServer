@@ -52,4 +52,4 @@ jobs:
     - name: Run tests
       run: cargo test --verbose
       env: 
-        TEST_DATABASE_URL: postgres://postgres:postgres@postgres:5432
+        TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432
