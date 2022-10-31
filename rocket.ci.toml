@@ -1,0 +1,15 @@
+[default.databases]
+test_db = { url = "postgres://postgres:postgres@localhost:5432/postgres"}
+
+[default.limits]
+data-form = "32 MiB" 
+
+#[default.tls]
+#certs = "ssl/localhost.pem"    
+#key = "ssl/localhost-key.pem"
+
+[release]
+main_db = { url = "postgres://rustuser:rustuser@db:5433/test"}
+log_level="normal"
+address = "0.0.0.0"
+port = 8000
