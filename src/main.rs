@@ -34,8 +34,8 @@ use app::Schema;
 use db::igniter::run_db_migrations;
 use dotenv::dotenv;
 use juniper::EmptySubscription;
-use rocket::{Rocket, Build};
 use rocket::{fairing::AdHoc, Route};
+use rocket::{Build, Rocket};
 use routes::{auth::login, file::get_file, utils::graphiql, utils::static_index};
 use std::env;
 
@@ -61,9 +61,7 @@ async fn main() -> Result<(), rocket::Error> {
     dotenv().ok();
     config::init();
 
-    let _rocket = app_build().launch()
-        .await
-        .expect("server to launch");
+    let _rocket = app_build().launch().await.expect("server to launch");
     Ok(())
 }
 
@@ -86,7 +84,6 @@ fn app_build() -> Rocket<Build> {
         .mount("/", routes_builder());
 
     return rocket;
-
 }
 
 fn routes_builder() -> Vec<Route> {
