@@ -9,7 +9,7 @@ data-form = "32 MiB"
 #key = "ssl/localhost-key.pem"
 
 [release]
-main_db = { url = "postgres://rustuser:rustuser@db:5433/test"}
+test_db = { url = "postgres://postgres:postgres@localhost:5432/postgres"}
 log_level="normal"
 address = "0.0.0.0"
 port = 8000
