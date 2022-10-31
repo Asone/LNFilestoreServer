@@ -61,7 +61,7 @@ async fn main() -> Result<(), rocket::Error> {
     dotenv().ok();
     config::init();
 
-    let rocket = app_build().launch()
+    let _rocket = app_build().launch()
         .await
         .expect("server to launch");
     Ok(())
