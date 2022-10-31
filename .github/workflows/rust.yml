@@ -50,6 +50,7 @@ jobs:
     - name: Build env variables
       run: | 
         mv rocket.ci.toml rocket.toml
+        cat rocket.toml
     - name: Build
       run: cargo build --verbose
     - name: Run tests
