@@ -2,6 +2,7 @@ pub use crate::db::schema::session;
 use crate::db::schema::user;
 use crate::graphql::types::input::user::EditUserInput;
 use crate::graphql::types::input::user::NewUserInput;
+use crate::graphql::types::input::user::UserRoleInputType;
 use bcrypt::hash;
 use bcrypt::DEFAULT_COST;
 use chrono::NaiveDateTime;
@@ -9,16 +10,38 @@ use diesel;
 use diesel::prelude::*;
 use diesel::result::Error;
 use diesel::PgConnection;
+use diesel_derive_enum::DbEnum;
+
+// define your enum
+#[derive(Debug, DbEnum, PartialEq, Clone)]
+pub enum UserRoleEnum {
+    Admin,
+    Moderator,
+    Publisher,
+}
 
 #[derive(Debug, AsChangeset)]
 #[table_name = "user"]
 pub struct EditUser {
     pub email: Option<String>,
+    pub role: Option<UserRoleEnum>,
 }
 
 impl From<EditUserInput> for EditUser {
     fn from(user: EditUserInput) -> Self {
-        Self { email: user.email }
+        Self {
+            email: user.email,
+            role: match user.role {
+                Some(r) => Some({
+                    match r {
+                        UserRoleInputType::Admin => UserRoleEnum::Admin,
+                        UserRoleInputType::Moderator => UserRoleEnum::Moderator,
+                        UserRoleInputType::Publisher => UserRoleEnum::Publisher,
+                    }
+                }),
+                None => None,
+            },
+        }
     }
 }
 
@@ -28,6 +51,7 @@ pub struct NewUser {
     pub login: String,
     pub email: String,
     pub password: String,
+    pub role: UserRoleEnum,
 }
 
 impl From<NewUserInput> for NewUser {
@@ -36,6 +60,14 @@ impl From<NewUserInput> for NewUser {
             login: new_user.login,
             email: new_user.email,
             password: new_user.password,
+            role: match new_user.role {
+                Some(r) => match r {
+                    UserRoleInputType::Admin => UserRoleEnum::Admin,
+                    UserRoleInputType::Moderator => UserRoleEnum::Moderator,
+                    UserRoleInputType::Publisher => UserRoleEnum::Publisher,
+                },
+                None => UserRoleEnum::Publisher,
+            },
         }
     }
 }
@@ -51,6 +83,7 @@ pub struct User {
     pub password: String,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
+    pub role: UserRoleEnum,
 }
 
 impl User {
