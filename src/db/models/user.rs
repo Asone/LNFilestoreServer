@@ -11,6 +11,7 @@ use diesel::prelude::*;
 use diesel::result::Error;
 use diesel::PgConnection;
 use diesel_derive_enum::DbEnum;
+use uuid::Uuid;
 
 // define your enum
 #[derive(Debug, DbEnum, PartialEq, Clone)]
@@ -45,9 +46,10 @@ impl From<EditUserInput> for EditUser {
     }
 }
 
-#[derive(Debug, Insertable)]
+#[derive(Debug, Insertable, Queryable)]
 #[table_name = "user"]
 pub struct NewUser {
+    pub uuid: Uuid,
     pub login: String,
     pub email: String,
     pub password: String,
@@ -57,6 +59,7 @@ pub struct NewUser {
 impl From<NewUserInput> for NewUser {
     fn from(new_user: NewUserInput) -> Self {
         Self {
+            uuid: uuid::Uuid::new_v4(),
             login: new_user.login,
             email: new_user.email,
             password: new_user.password,

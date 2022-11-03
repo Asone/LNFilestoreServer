@@ -22,13 +22,34 @@ LN Filestore Server requires access to a running Postgresql service.
 
 **Database migrations**
 
-> DATABASE_RUN_MIGRATIONS_ON_IGNITE=true
+> DATABASE_RUN_MIGRATIONS_ON_IGNITE=false
 
 Indicates if the migrations should be run on server launch. 
 This is useful to build the database schema on first launch. 
 
 Note that the further launches of the server won't overwrite the already ran migrations.
 
+**Database seed**
+
+> DATABASE_SEED_ON_IGNITE=true
+
+Indicates if the database should be provided with seed data. 
+
+This will seed the database with a default admin user which information can be provided through the `DEFAULT_ADMIN_*` parameters
+
+## Default user information
+
+**Default admin name**
+
+> DEFAULT_ADMIN_NAME=Satoshi
+
+**Default admin email**
+
+> DATABASE_SEED_EMAIL=satoshi@nakamoto.btc
+
+**Default admin password**
+
+> DATABASE_SEED_PWD=craigwrightisnotsatoshi
 
 ## LND 
 
