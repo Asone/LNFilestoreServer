@@ -43,6 +43,10 @@ table! {
 }
 
 table! {
+
+    use diesel::sql_types::*;
+    use crate::db::models::user::UserRoleEnumMapping;
+
     user (uuid) {
         uuid -> Uuid,
         login -> Text,
@@ -50,6 +54,7 @@ table! {
         password -> Text,
         created_at -> Timestamptz,
         updated_at -> Timestamptz,
+        role -> UserRoleEnumMapping,
     }
 }
 

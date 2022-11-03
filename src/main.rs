@@ -30,7 +30,7 @@ mod routes;
 
 use crate::db::PostgresConn;
 use app::Schema;
-use db::igniter::run_db_migrations;
+use db::igniter::{run_db_migrations, seed_db};
 use dotenv::dotenv;
 use juniper::EmptySubscription;
 use rocket::Rocket;
@@ -67,6 +67,7 @@ async fn main() -> Result<(), rocket::Error> {
             "Database Migrations",
             run_db_migrations,
         ))
+        .attach(AdHoc::try_on_ignite("Database seed", seed_db))
         .manage(Cors)
         // .configure(figment)
         .register("/", catchers![payment_required])

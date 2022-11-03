@@ -1,6 +1,7 @@
 use juniper::{FieldError, FieldResult, Value};
 
 use crate::db::models::user::User;
+use crate::db::models::user::UserRoleEnum;
 use crate::graphql::types::input::user::EditUserInput;
 
 use super::{
@@ -25,6 +26,13 @@ impl Mutation {
             None => false,
         }
     }
+
+    pub fn has_permissioned_role(user: &Option<User>, roles: Vec<UserRoleEnum>) -> bool {
+        match user {
+            Some(user) => roles.contains(&user.role),
+            None => false,
+        }
+    }
 }
 
 #[juniper::graphql_object(context = GQLContext)]
@@ -44,6 +52,7 @@ impl Mutation {
         create_user::create_user(context, new_user_input).await
     }
 
+    #[protected]
     #[graphql(description = "Edits a user")]
     async fn edit_user<'a>(
         context: &'a GQLContext,
@@ -57,14 +66,27 @@ impl Mutation {
             ));
         }
 
+        if !Self::has_permissioned_role(&context.user, vec![UserRoleEnum::Admin]) {
+            return Err(FieldError::new(
+                "You do not have the required permission to perform this action",
+                Value::null(),
+            ));
+        }
+
         edit_user::edit_user(context, uuid, edit_user_input).await
     }
 
     #[graphql(description = "Deletes a user")]
     async fn delete_user<'a>(context: &'a GQLContext, uuid: uuid::Uuid) -> FieldResult<bool> {
-        if Self::is_authenticated(&context.user) == false {
+        if !Self::is_authenticated(&context.user) {
             return Err(FieldError::new(
                 "You need to be authenticated to use this mutation",
+                Value::null(),
+            ));
+        }
+        if !Self::has_permissioned_role(&context.user, vec![UserRoleEnum::Admin]) {
+            return Err(FieldError::new(
+                "You do not have the required permission to perform this action",
                 Value::null(),
             ));
         }
@@ -100,6 +122,16 @@ impl Mutation {
             ));
         }
 
+        if !Self::has_permissioned_role(
+            &context.user,
+            vec![UserRoleEnum::Admin, UserRoleEnum::Moderator],
+        ) {
+            return Err(FieldError::new(
+                "You do not have the required permission to perform this action",
+                Value::null(),
+            ));
+        }
+
         edit_media::edit_media(context, uuid, media).await
     }
 
@@ -108,6 +140,13 @@ impl Mutation {
         if Self::is_authenticated(&context.user) == false {
             return Err(FieldError::new(
                 "You need to be authenticated to use this mutation",
+                Value::null(),
+            ));
+        }
+
+        if !Self::has_permissioned_role(&context.user, vec![UserRoleEnum::Admin]) {
+            return Err(FieldError::new(
+                "You do not have the required permission to perform this action",
                 Value::null(),
             ));
         }

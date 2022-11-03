@@ -18,12 +18,12 @@ impl Query {
         get_files_list(context).await
     }
 
-    #[graphql(description = "
-        Requests an invoice for a media. \n
+    #[graphql(description = r#"
+        Requests an invoice for a media.
         If a payment_request is provided, the query will check
         for the provided payment_request status and provide a new onee
         if necessary.
-    ")]
+    "#)]
     async fn request_invoice_for_media(
         context: &'a GQLContext,
         uuid: uuid::Uuid,
