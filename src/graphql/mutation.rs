@@ -25,6 +25,7 @@ impl Mutation {
         context: &'a GQLContext,
         new_user_input: NewUserInput,
     ) -> FieldResult<UserType> {
+
         if !&context.is_authenticated() {
             return Err(FieldError::new(
                 "You need to be authenticated to use this mutation",
@@ -69,7 +70,7 @@ impl Mutation {
         }
 
         if !&context.has_permissioned_role(vec![UserRoleEnum::Admin]) {
-            return Err(FieldError::new(
+            return Err(FieldError::new( 
                 "You do not have the required permission to perform this action",
                 Value::null(),
             ));
@@ -83,7 +84,7 @@ impl Mutation {
         context: &'a GQLContext,
         file_input: FileInput,
     ) -> FieldResult<MediaType> {
-        if Self::is_authenticated(&context.user) == false {
+        if !&context.is_authenticated() {
             return Err(FieldError::new(
                 "You need to be authenticated to use this mutation",
                 Value::null(),
@@ -112,6 +113,7 @@ impl Mutation {
                 Value::null(),
             ));
         }
+
 
         edit_media::edit_media(context, uuid, media).await
     }
