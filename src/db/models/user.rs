@@ -77,9 +77,10 @@ impl From<NewUserInput> for NewUser {
 
 /// User object instance
 #[derive(Identifiable, Queryable, PartialEq, Clone)]
-#[primary_key(uuid)]
+#[primary_key(id)]
 #[table_name = "user"]
 pub struct User {
+    pub id: i32,
     pub uuid: uuid::Uuid,
     pub login: String,
     pub email: String,
@@ -95,7 +96,7 @@ impl User {
 
         diesel::insert_into::<user>(user)
             .values(&new_user)
-            .get_result(connection)
+            .get_result::<User>(connection)
     }
 
     pub fn update(
@@ -160,5 +161,10 @@ impl User {
             .or_filter(email.eq(user_email))
             .first::<User>(connection)
             .optional()
+    }
+
+    pub fn find(connection: &PgConnection) -> QueryResult<Vec<User>> {
+        use crate::db::schema::user::dsl::*;
+        user.load::<User>(connection)
     }
 }

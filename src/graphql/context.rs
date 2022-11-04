@@ -1,7 +1,10 @@
 use std::collections::HashMap;
 
 use crate::{
-    db::{models::user::User, PostgresConn},
+    db::{
+        models::user::{User, UserRoleEnum},
+        PostgresConn,
+    },
     lnd::client::LndClient,
 };
 
@@ -51,6 +54,7 @@ impl GQLContext {
         return &self.pool;
     }
 
+    // Provides files collection that have been sent through request
     pub fn get_files(&self) -> &Option<HashMap<String, TempFile>> {
         return &self.files;
     }
@@ -58,5 +62,21 @@ impl GQLContext {
     /// Provides the instance of optional user
     pub fn get_user(&self) -> &Option<User> {
         return &self.user;
+    }
+
+    // Checks if user is authenticated
+    pub fn is_authenticated(&self) -> bool {
+        match &self.user {
+            Some(_) => true,
+            None => false,
+        }
+    }
+
+    // Checks if user is granted with role from a list of roles
+    pub fn has_permissioned_role(&self, roles: Vec<UserRoleEnum>) -> bool {
+        match &self.user {
+            Some(user) => roles.contains(&user.role),
+            None => false,
+        }
     }
 }

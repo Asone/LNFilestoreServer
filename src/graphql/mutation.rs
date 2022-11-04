@@ -1,6 +1,5 @@
 use juniper::{FieldError, FieldResult, Value};
 
-use crate::db::models::user::User;
 use crate::db::models::user::UserRoleEnum;
 use crate::graphql::types::input::user::EditUserInput;
 
@@ -19,22 +18,6 @@ use crate::graphql::mutations::upload_file;
 
 pub struct Mutation;
 
-impl Mutation {
-    pub fn is_authenticated(user: &Option<User>) -> bool {
-        match user {
-            Some(_) => true,
-            None => false,
-        }
-    }
-
-    pub fn has_permissioned_role(user: &Option<User>, roles: Vec<UserRoleEnum>) -> bool {
-        match user {
-            Some(user) => roles.contains(&user.role),
-            None => false,
-        }
-    }
-}
-
 #[juniper::graphql_object(context = GQLContext)]
 impl Mutation {
     #[graphql(description = "Creates a user")]
@@ -42,7 +25,7 @@ impl Mutation {
         context: &'a GQLContext,
         new_user_input: NewUserInput,
     ) -> FieldResult<UserType> {
-        if Self::is_authenticated(&context.user) == false {
+        if !&context.is_authenticated() {
             return Err(FieldError::new(
                 "You need to be authenticated to use this mutation",
                 Value::null(),
@@ -59,14 +42,14 @@ impl Mutation {
         uuid: uuid::Uuid,
         edit_user_input: EditUserInput,
     ) -> FieldResult<UserType> {
-        if Self::is_authenticated(&context.user) == false {
+        if !&context.is_authenticated() {
             return Err(FieldError::new(
                 "You need to be authenticated to use this mutation",
                 Value::null(),
             ));
         }
 
-        if !Self::has_permissioned_role(&context.user, vec![UserRoleEnum::Admin]) {
+        if !&context.has_permissioned_role(vec![UserRoleEnum::Admin]) {
             return Err(FieldError::new(
                 "You do not have the required permission to perform this action",
                 Value::null(),
@@ -78,13 +61,14 @@ impl Mutation {
 
     #[graphql(description = "Deletes a user")]
     async fn delete_user<'a>(context: &'a GQLContext, uuid: uuid::Uuid) -> FieldResult<bool> {
-        if !Self::is_authenticated(&context.user) {
+        if !&context.is_authenticated() {
             return Err(FieldError::new(
                 "You need to be authenticated to use this mutation",
                 Value::null(),
             ));
         }
-        if !Self::has_permissioned_role(&context.user, vec![UserRoleEnum::Admin]) {
+
+        if !&context.has_permissioned_role(vec![UserRoleEnum::Admin]) {
             return Err(FieldError::new(
                 "You do not have the required permission to perform this action",
                 Value::null(),
@@ -115,17 +99,14 @@ impl Mutation {
         uuid: uuid::Uuid,
         media: EditMediaInput,
     ) -> FieldResult<MediaType> {
-        if Self::is_authenticated(&context.user) == false {
+        if !&context.is_authenticated() {
             return Err(FieldError::new(
                 "You need to be authenticated to use this mutation",
                 Value::null(),
             ));
         }
 
-        if !Self::has_permissioned_role(
-            &context.user,
-            vec![UserRoleEnum::Admin, UserRoleEnum::Moderator],
-        ) {
+        if !&context.has_permissioned_role(vec![UserRoleEnum::Admin, UserRoleEnum::Moderator]) {
             return Err(FieldError::new(
                 "You do not have the required permission to perform this action",
                 Value::null(),
@@ -137,14 +118,14 @@ impl Mutation {
 
     #[graphql(description = "Deletes a media")]
     async fn delete_media<'a>(context: &'a GQLContext, uuid: uuid::Uuid) -> FieldResult<bool> {
-        if Self::is_authenticated(&context.user) == false {
+        if !&context.is_authenticated() {
             return Err(FieldError::new(
                 "You need to be authenticated to use this mutation",
                 Value::null(),
             ));
         }
 
-        if !Self::has_permissioned_role(&context.user, vec![UserRoleEnum::Admin]) {
+        if !&context.has_permissioned_role(vec![UserRoleEnum::Admin]) {
             return Err(FieldError::new(
                 "You do not have the required permission to perform this action",
                 Value::null(),

@@ -1,8 +1,9 @@
-use super::queries::get_files_list::get_files_list;
 use super::queries::get_files_relay::get_files_list_relay;
 use super::queries::get_media::get_media;
 use super::queries::request_invoice_for_media::request_invoice_for_media;
+use super::queries::users_relay::users_relay;
 use super::types::output::media::MediaType;
+use super::{queries::get_files_list::get_files_list, types::output::user::UserType};
 use crate::db::models::media::Media;
 use crate::graphql::context::GQLContext;
 use crate::graphql::types::output::invoices::MediaInvoice;
@@ -55,5 +56,16 @@ impl Query {
     #[graphql(description = "Gets available files with relay pagination")]
     async fn get_files_relay(context: &'a GQLContext) -> FieldResult<RelayConnection<MediaType>> {
         get_files_list_relay(context, None, None, None, None).await
+    }
+
+    #[graphql(description = "Get a relay pagination of users")]
+    async fn users_relay(
+        context: &'a GQLContext,
+        first: Option<i32>,
+        after: Option<String>,
+        last: Option<i32>,
+        before: Option<String>,
+    ) -> FieldResult<RelayConnection<UserType>> {
+        users_relay(context, first, after, last, before).await
     }
 }
