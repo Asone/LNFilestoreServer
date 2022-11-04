@@ -67,17 +67,18 @@ impl UserSession {
     pub fn update_session_expiry(
         session_uuid: uuid::Uuid,
         connection: &PgConnection,
-    ) -> Result<UserSession, ()> {
+    ) -> QueryResult<UserSession> {
         use crate::db::schema::session::dsl::*;
 
         let result = diesel::update(session.filter(uuid.eq(session_uuid)))
             .set(expires_at.eq(Self::expiry_generator(None)))
             .get_result::<UserSession>(connection);
 
-        match result {
-            Ok(result) => Ok(result),
-            Err(_) => Err(()),
-        }
+        result
+        // match result {
+        //     Ok(result) => Ok(result),
+        //     Err(_) => Err(()),
+        // }
     }
 
     fn expiry_generator(minutes_duration: Option<i64>) -> DateTime<Utc> {
