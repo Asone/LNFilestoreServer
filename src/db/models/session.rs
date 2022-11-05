@@ -44,6 +44,17 @@ impl From<User> for NewUserSession {
     }
 }
 
+impl From<&User> for NewUserSession {
+    fn from(user: &User) -> Self {
+        Self {
+            uuid: Uuid::new_v4(),
+            token: Uuid::new_v4().to_string(),
+            user_uuid: user.uuid,
+            expires_at: UserSession::expiry_generator(None).naive_utc(),
+        }
+    }
+}
+
 impl UserSession {
     /// Creates a session stored in database from a NewUserSession instance
     pub fn create(
