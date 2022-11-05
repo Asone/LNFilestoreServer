@@ -17,19 +17,26 @@ pub async fn login(
     cookies: &CookieJar<'_>,
     user_form: Form<Strict<LoginUser>>,
 ) -> rocket::http::Status {
-    let user = user_form.into_inner().into_inner();
+    let login_user = user_form.into_inner().into_inner();
 
-    let session = user.login(db).await;
+    let session = login_user.login(db).await;
 
     match session {
-        Ok(user_session) => {
-            let token = UserToken::generate_token(user_session).unwrap();
-            let cookie = Cookie::build("session", token)
+        Ok(session) => {
+            let scope = session.0.role;
+            let scope_cookie = Cookie::build("scope", scope.to_string())
                 .same_site(same_site_cookie())
                 .secure(secure_cookie())
                 .finish();
 
-            cookies.add(cookie);
+            let token = UserToken::generate_token(session.1).unwrap();
+            let session_cookie = Cookie::build("session", token)
+                .same_site(same_site_cookie())
+                .secure(secure_cookie())
+                .finish();
+
+            cookies.add(scope_cookie);
+            cookies.add(session_cookie);
             Status::Ok
         }
         Err(_) => Status::ExpectationFailed,

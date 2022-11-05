@@ -1,3 +1,5 @@
+use core::fmt;
+
 pub use crate::db::schema::session;
 use crate::db::schema::user;
 use crate::graphql::types::input::user::EditUserInput;
@@ -19,6 +21,16 @@ pub enum UserRoleEnum {
     Admin,
     Moderator,
     Publisher,
+}
+
+impl fmt::Display for UserRoleEnum {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            UserRoleEnum::Admin => write!(f, "Admin"),
+            UserRoleEnum::Moderator => write!(f, "Moderator"),
+            UserRoleEnum::Publisher => write!(f, "Publisher"),
+        }
+    }
 }
 
 #[derive(Debug, AsChangeset)]
