@@ -127,6 +127,11 @@ impl MediaType {
         self.price
     }
 
+    #[graphql(description = "Is the media published")]
+    fn published(&self) -> bool {
+        self.published
+    }
+
     #[graphql(description = "Creation date of media")]
     fn created_at(&self) -> NaiveDateTime {
         self.created_at

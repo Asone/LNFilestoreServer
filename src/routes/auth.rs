@@ -1,6 +1,7 @@
+use chrono::{DateTime, Utc};
 use rocket::{
     form::{Form, Strict},
-    http::{Cookie, CookieJar, SameSite, Status},
+    http::{Cookie, CookieJar, SameSite, Status}, time::OffsetDateTime,
 };
 
 use crate::{
@@ -23,15 +24,19 @@ pub async fn login(
 
     match session {
         Ok(session) => {
+            let expiration = OffsetDateTime::from_unix_timestamp_nanos(session.1.expires_at.timestamp_nanos().into());
+            
             let scope = session.0.role;
             let scope_cookie = Cookie::build("scope", scope.to_string())
                 .same_site(same_site_cookie())
+                .expires(expiration.unwrap())
                 .secure(secure_cookie())
                 .finish();
 
             let token = UserToken::generate_token(session.1).unwrap();
             let session_cookie = Cookie::build("session", token)
                 .same_site(same_site_cookie())
+                .expires(expiration.unwrap())
                 .secure(secure_cookie())
                 .finish();
 

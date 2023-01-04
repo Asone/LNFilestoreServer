@@ -76,6 +76,11 @@ impl Media {
             .get_result(connection)
     }
 
+    pub fn find_all(connection: &PgConnection) -> Vec<Media> {
+        use crate::db::schema::media::dsl::*;
+        media.load(connection).unwrap()
+    }
+
     pub fn find_all_published(connection: &PgConnection) -> Vec<Media> {
         use crate::db::schema::media::dsl::*;
         media.filter(published.eq(true)).load(connection).unwrap()
