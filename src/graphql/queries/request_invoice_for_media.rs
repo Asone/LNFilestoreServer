@@ -28,32 +28,25 @@ pub async fn request_invoice_for_media<'a>(
     let client = context.get_lnd_client();
 
     // Get media from db
-    let db_result = connection
+    let media = match connection
         .run(move |c| Media::find_one_by_uuid(uuid, c))
-        .await;
-
-    // db failure
-    if db_result.is_err() {
-        return Err(FieldError::new(
+        .await {
+        Ok(media) => match media {
+            Some(media) => media,
+            None => {
+                return Err(FieldError::new(
+            "No media found with provided uuid",
+            Value::Null,
+                ));
+            }
+        },
+        Err(e) => {
+            return Err(FieldError::new(
             "Error while requesting database",
             Value::Null,
         ));
-    }
-
-    // unwrap result if no db failure
-    let media = db_result.unwrap();
-
-    // Return error if there is no media found in db
-    if media.is_none() {
-        return Err(FieldError::new(
-            "No media found with provided uuid",
-            Value::Null,
-        ));
-    }
-
-    // unwrap result to get the media. At this point we are sure
-    // media is some due to if statement above
-    let media = media.unwrap();
+        }
+        };
 
     // Dispatch action based on presence of payment_request in request input
     match payment_request {
@@ -229,4 +222,5 @@ fn _field_error_from_media_payment(
             "expiresAt": expires_at
         }),
     )
+
 }

@@ -94,7 +94,7 @@ impl From<(MediaPayment, InvoiceState)> for MediaInvoice {
 impl From<(MediaPayment, CustomInvoiceStateFlag)> for MediaInvoice {
     fn from(data: (MediaPayment, CustomInvoiceStateFlag)) -> Self {
         match data.1 {
-            CustomInvoiceStateFlag::ExpiredInvoice => Self::AvailablePayment(AvailablePayment {
+            CustomInvoiceStateFlag::ExpiredInvoice => Self::ExpiredValidityPayment(ExpiredValidityPayment {
                 media_uuid: data.0.media_uuid,
                 payment_request: data.0.request,
                 expires_at: data.0.expires_at,
