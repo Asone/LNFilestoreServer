@@ -30,23 +30,24 @@ pub async fn request_invoice_for_media<'a>(
     // Get media from db
     let media = match connection
         .run(move |c| Media::find_one_by_uuid(uuid, c))
-        .await {
+        .await
+    {
         Ok(media) => match media {
             Some(media) => media,
             None => {
                 return Err(FieldError::new(
-            "No media found with provided uuid",
-            Value::Null,
+                    "No media found with provided uuid",
+                    Value::Null,
                 ));
             }
         },
         Err(e) => {
             return Err(FieldError::new(
-            "Error while requesting database",
-            Value::Null,
-        ));
+                "Error while requesting database",
+                Value::Null,
+            ));
         }
-        };
+    };
 
     // Dispatch action based on presence of payment_request in request input
     match payment_request {
@@ -222,5 +223,4 @@ fn _field_error_from_media_payment(
             "expiresAt": expires_at
         }),
     )
-
 }
