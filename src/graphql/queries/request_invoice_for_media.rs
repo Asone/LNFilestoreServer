@@ -1,8 +1,10 @@
 use crate::db::models::media::Media;
+use crate::db::models::media::MediaModelType;
 use crate::db::models::media_payment::MediaPayment;
 use crate::db::models::media_payment::NewMediaPayment;
 use crate::db::PostgresConn;
 use crate::graphql::context::GQLContext;
+use crate::graphql::types::output::invoices::CustomInvoiceStateFlag;
 use crate::graphql::types::output::invoices::MediaInvoice;
 use crate::lnd::invoice::InvoiceParams;
 use crate::lnd::invoice::InvoiceUtils;
@@ -85,31 +87,46 @@ async fn check_provided_payment_request(
     payment_request: String,
 ) -> Result<MediaInvoice, FieldError> {
     // Request db to find payment
-    let payment = connection
+    let payment = match connection
         .run(move |c| MediaPayment::find_one_by_request(payment_request, c))
-        .await;
+        .await
+    {
+        Ok(payment) => match payment {
+            Some(payment) => payment,
+            None => {
+                return Err(FieldError::new(
+                    "No payment found with the provided payment_request",
+                    Value::Null,
+                ))
+            }
+        },
+        Err(e) => {
+            return Err(FieldError::new(
+                "Error while requesting database",
+                Value::Null,
+            ))
+        }
+    };
 
-    // In case of db failure
-    if payment.is_err() {
-        return Err(FieldError::new(
-            "Error while requesting database",
-            Value::Null,
-        ));
+    // No matter any other condition, if the payment validity is considered as expired
+    // we shall return a new invoice
+    if payment.is_expired() {
+        let media_for_payment = media.clone();
+        match generate_media_payment(connection, &lnd, media_for_payment).await {
+            Ok(r) => {
+                return Ok(MediaInvoice::from((
+                    r,
+                    CustomInvoiceStateFlag::ExpiredInvoice,
+                )));
+            }
+            Err(e) => {
+                return Err(FieldError::new(
+                    "Error while requesting lightning network registry",
+                    Value::Null,
+                ));
+            }
+        };
     }
-
-    // Unwrap result
-    let payment = payment.unwrap();
-
-    // In case there is no payment found
-    if payment.is_none() {
-        return Err(FieldError::new(
-            "No payment found with the provided payment_request",
-            Value::Null,
-        ));
-    }
-
-    // Unwrap as we are sure at this point there is a payment
-    let payment = payment.unwrap();
 
     // Ensure the request media is the same that is associated in the payment
     if payment.media_uuid != media.uuid {
@@ -118,33 +135,28 @@ async fn check_provided_payment_request(
             Value::Null,
         ));
     }
+
     let payment_request = payment.request.clone();
-    let invoice_result =
-        InvoiceUtils::get_invoice_state_from_payment_request(&lnd, payment_request).await;
 
-    // Request LND service to get the Invoice object
-
-    // In case of LND Service failure
-    if invoice_result.is_err() {
-        return Err(FieldError::new(
-            "Error while requesting lightning network registry",
-            Value::Null,
-        ));
-    }
-
-    // unwrap the result as we are sure error case is handled
-    let invoice = invoice_result.unwrap();
-
-    // In case no invoice is found on LND service
-    if invoice.is_none() {
-        return Err(FieldError::new(
-            "No invoice found with the current payment request on the lightning network service",
-            Value::Null,
-        ));
-    }
-
-    // Unwrap as we are sure at this point we have an invoice
-    let invoice = invoice.unwrap();
+    let invoice = match InvoiceUtils::get_invoice_state_from_payment_request(&lnd, payment_request)
+        .await
+    {
+        Ok(r) => match r {
+            Some(invoice) => invoice,
+            None => {
+                return Err(FieldError::new(
+                     "No invoice found with the current payment request on the lightning network service",
+         Value::Null,
+                    ));
+            }
+        },
+        Err(e) => {
+            return Err(FieldError::new(
+                "Error while requesting lightning network registry",
+                Value::Null,
+            ));
+        }
+    };
 
     // Return result based on the invoice state
     match invoice.state() {
@@ -181,7 +193,12 @@ async fn generate_media_payment(
     let params = InvoiceParams::new(Some(media.price as i64), Some(memo), None);
     let invoice = InvoiceUtils::generate_invoice(lnd.clone(), params).await;
     let payment = connection
-        .run(move |c| MediaPayment::create(NewMediaPayment::from((invoice, media.uuid)), c))
+        .run(move |c| {
+            MediaPayment::create(
+                NewMediaPayment::from((invoice, media.uuid, MediaModelType::Media(media))),
+                c,
+            )
+        })
         .await;
 
     match payment {

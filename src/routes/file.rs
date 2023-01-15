@@ -1,5 +1,6 @@
 use std::path::Path;
 
+use chrono::Utc;
 use rocket::{
     fs::NamedFile,
     http::{Header, Status},
@@ -46,21 +47,19 @@ pub async fn get_file(
     lnd: LndClient,
 ) -> Result<DownloadResponder, status::Custom<Option<RawJson<String>>>> {
     // Calls the get_media to try to retrieve the requested media from database
-    let media = get_media(&uuid, &db).await;
-
-    // Builds the error response if the media could not be retrieved
-    if media.is_err() {
-        return match media.unwrap_err() {
-            FileHandlingError::DbFailure => Err(status::Custom(Status::InternalServerError, None)),
-            FileHandlingError::MediaNotFound => Err(status::Custom(Status::NotFound, None)),
-            FileHandlingError::UuidParsingError => Err(status::Custom(Status::BadRequest, None)),
-            _ => Err(status::Custom(Status::ImATeapot, None)),
-        };
-    }
-
-    // There's no reason we could not unwrap the media as the match above should ensure to handle all the error cases.
-    // We can so consider the unwrap as safe.
-    let media = media.unwrap();
+    let media = match get_media(&uuid, &db).await {
+        Ok(media) => media,
+        Err(e) => match e {
+            FileHandlingError::DbFailure => {
+                return Err(status::Custom(Status::InternalServerError, None))
+            }
+            FileHandlingError::MediaNotFound => return Err(status::Custom(Status::NotFound, None)),
+            FileHandlingError::UuidParsingError => {
+                return Err(status::Custom(Status::BadRequest, None))
+            }
+            _ => return Err(status::Custom(Status::ImATeapot, None)),
+        },
+    };
 
     // If the media exists and is free we should deliver it to the user without performing any further operation
     if media.price == 0 {
@@ -69,34 +68,31 @@ pub async fn get_file(
 
     // Otherwise we ensure try to retrieve an associated payment to the requested media.
     // see get_media_payment for handling process
-    let payment = get_media_payment(invoice, &media.uuid, &db).await;
-
-    // Payment retrieval failed
-    if payment.is_err() {
-        return match payment.unwrap_err() {
-            FileHandlingError::DbFailure => Err(status::Custom(Status::InternalServerError, None)),
+    let payment = match get_media_payment(invoice, &media.uuid, &db).await {
+        Ok(payment) => payment,
+        Err(e) => match e {
+            FileHandlingError::DbFailure => {
+                return Err(status::Custom(Status::InternalServerError, None))
+            }
             FileHandlingError::PaymentRequired => {
-                let invoice = request_new_media_payment(&media, lnd, db).await;
-
-                match invoice {
+                match request_new_media_payment(&media, lnd, db).await {
                     Ok(invoice) => {
                         let data = format!("{{ payment_request: {}}}", invoice.request);
-
-                        Err(status::Custom(Status::PaymentRequired, Some(RawJson(data))))
+                        return Err(status::Custom(Status::PaymentRequired, Some(RawJson(data))));
                     }
                     Err(e) => match e {
                         FileHandlingError::DbFailure => {
-                            Err(status::Custom(Status::InternalServerError, None))
+                            return Err(status::Custom(Status::InternalServerError, None))
                         }
-                        _ => Err(status::Custom(Status::ImATeapot, None)),
+                        _ => return Err(status::Custom(Status::ImATeapot, None)),
                     },
                 }
             }
-            _ => Err(status::Custom(Status::ImATeapot, None)),
-        };
-    }
+            _ => return Err(status::Custom(Status::ImATeapot, None)),
+        },
+    };
 
-    let invoice = get_invoice(payment.unwrap(), &lnd.0).await; // .map_err(|error| return error).unwrap();
+    let invoice = get_invoice(payment.clone(), &lnd.0).await; // .map_err(|error| return error).unwrap();
 
     if invoice.is_err() {
         return match invoice.unwrap_err() {
@@ -109,7 +105,25 @@ pub async fn get_file(
     let invoice = invoice.unwrap();
 
     match invoice.state() {
-        InvoiceState::Settled => set_download_responder(media).await,
+        InvoiceState::Settled => match payment.clone().valid_until {
+            Some(valid_until) => match valid_until >= Utc::now().naive_utc() {
+                true => set_download_responder(media).await,
+                false => match request_new_media_payment(&media, lnd, db).await {
+                    Ok(invoice) => {
+                        let data = format!("{{ payment_request: {}}}", invoice.request);
+
+                        Err(status::Custom(Status::PaymentRequired, Some(RawJson(data))))
+                    }
+                    Err(e) => match e {
+                        FileHandlingError::DbFailure => {
+                            Err(status::Custom(Status::InternalServerError, None))
+                        }
+                        _ => Err(status::Custom(Status::ImATeapot, None)),
+                    },
+                },
+            },
+            None => set_download_responder(media).await,
+        },
         InvoiceState::Accepted => Err(status::Custom(Status::NotFound, None)),
         InvoiceState::Canceled => {
             let invoice = request_new_media_payment(&media, lnd, db).await;

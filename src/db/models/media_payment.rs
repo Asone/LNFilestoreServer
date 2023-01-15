@@ -1,12 +1,18 @@
+use std::time::Instant;
+
 pub use crate::db::schema::media_payment;
 use crate::lnd::invoice::LndInvoice;
+use chrono::Duration;
 use chrono::NaiveDateTime;
+use chrono::Utc;
 use diesel;
 use diesel::prelude::*;
 use diesel::PgConnection;
 use uuid::Uuid;
 
-#[derive(Queryable, PartialEq, Associations, Debug)]
+use super::media::MediaModelType;
+
+#[derive(Queryable, PartialEq, Associations, Debug, Clone)]
 #[table_name = "media_payment"]
 #[belongs_to(parent = Media, foreign_key = "media_uuid")]
 pub struct MediaPayment {
@@ -16,6 +22,7 @@ pub struct MediaPayment {
     pub hash: String,
     pub media_uuid: Uuid,
     pub expires_at: NaiveDateTime,
+    pub valid_until: Option<NaiveDateTime>,
 }
 
 #[derive(Debug, Insertable)]
@@ -26,6 +33,7 @@ pub struct NewMediaPayment {
     request: String,
     media_uuid: Uuid,
     expires_at: NaiveDateTime,
+    valid_until: Option<NaiveDateTime>,
 }
 
 impl From<(LndInvoice, uuid::Uuid)> for NewMediaPayment {
@@ -36,6 +44,41 @@ impl From<(LndInvoice, uuid::Uuid)> for NewMediaPayment {
             request: data.0.payment_request,
             media_uuid: data.1.to_owned(),
             expires_at: data.0.expires_at,
+            valid_until: None,
+        }
+    }
+}
+
+impl From<(LndInvoice, uuid::Uuid, MediaModelType)> for NewMediaPayment {
+    fn from(data: (LndInvoice, uuid::Uuid, MediaModelType)) -> Self {
+        let valid_until = match data.2 {
+            MediaModelType::Media(e) => match e.payment_duration {
+                Some(duration) => Some(
+                    Utc::now()
+                        .checked_add_signed(Duration::minutes(duration.into()))
+                        .unwrap()
+                        .naive_utc(),
+                ),
+                None => None,
+            },
+            MediaModelType::NewMedia(e) => match e.payment_duration {
+                Some(duration) => Some(
+                    Utc::now()
+                        .checked_add_signed(Duration::minutes(duration.into()))
+                        .unwrap()
+                        .naive_utc(),
+                ),
+                None => None,
+            },
+        };
+
+        Self {
+            uuid: Uuid::new_v4(),
+            hash: data.0.r_hash,
+            request: data.0.payment_request,
+            media_uuid: data.1.to_owned(),
+            expires_at: data.0.expires_at,
+            valid_until,
         }
     }
 }
@@ -61,5 +104,12 @@ impl MediaPayment {
         diesel::insert_into::<media_payment>(media_payment)
             .values(&new_payment)
             .get_result(connection)
+    }
+
+    pub fn is_expired(&self) -> bool {
+        match &self.valid_until {
+            Some(valid_until) => valid_until > &Utc::now().naive_utc(),
+            None => true,
+        }
     }
 }
