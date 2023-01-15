@@ -4,6 +4,21 @@ use uuid::Uuid;
 
 use crate::db::models::media_payment::MediaPayment;
 
+pub enum CustomInvoiceStateFlag {
+    ExpiredInvoice,
+}
+
+#[derive(GraphQLObject)]
+pub struct ExpiredValidityPayment {
+    #[graphql(description = "The related media uuid")]
+    media_uuid: Uuid,
+    #[graphql(description = "The paywall ln new invoice payment request string")]
+    payment_request: String,
+    #[graphql(description = "The expiry time of new invoice")]
+    expires_at: NaiveDateTime,
+    #[graphql(description = "The current state of the new payment request")]
+    state: Option<String>,
+}
 #[derive(GraphQLObject)]
 pub struct AvailablePayment {
     #[graphql(description = "The related media uuid")]
@@ -43,6 +58,7 @@ pub enum MediaInvoice {
     ReplacementPayment(ReplacementPayment),
     AvailablePayment(AvailablePayment),
     SettledPayment(SettledPayment),
+    ExpiredValidityPayment(ExpiredValidityPayment),
 }
 
 impl From<(MediaPayment, InvoiceState)> for MediaInvoice {
@@ -70,6 +86,19 @@ impl From<(MediaPayment, InvoiceState)> for MediaInvoice {
                 payment_request: data.0.request,
                 expires_at: data.0.expires_at,
                 state: Some("open".to_string()),
+            }),
+        }
+    }
+}
+
+impl From<(MediaPayment, CustomInvoiceStateFlag)> for MediaInvoice {
+    fn from(data: (MediaPayment, CustomInvoiceStateFlag)) -> Self {
+        match data.1 {
+            CustomInvoiceStateFlag::ExpiredInvoice => Self::AvailablePayment(AvailablePayment {
+                media_uuid: data.0.media_uuid,
+                payment_request: data.0.request,
+                expires_at: data.0.expires_at,
+                state: Some("expired".to_string()),
             }),
         }
     }
