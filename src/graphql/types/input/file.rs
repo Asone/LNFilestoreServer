@@ -4,6 +4,7 @@ pub struct FileInput {
     pub title: String,
     pub description: Option<String>,
     pub price: i32,
+    pub payment_duration: Option<i32>,
     pub published: bool,
     // We expect this to be always `null` as per the spec
     // see : https://github.com/jaydenseric/graphql-multipart-request-spec

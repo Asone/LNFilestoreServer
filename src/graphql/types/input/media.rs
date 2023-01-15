@@ -4,4 +4,5 @@ pub struct EditMediaInput {
     pub description: Option<String>,
     pub price: Option<i32>,
     pub published: Option<bool>,
+    pub payment_duration: Option<i32>,
 }

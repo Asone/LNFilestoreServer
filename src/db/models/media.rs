@@ -9,7 +9,11 @@ use diesel::PgConnection;
 use std::path::PathBuf;
 use uuid::Uuid;
 
-#[derive(Identifiable, Queryable, PartialEq, Debug)]
+pub enum MediaModelType {
+    Media(Media),
+    NewMedia(NewMedia),
+}
+#[derive(Identifiable, Queryable, PartialEq, Debug, Clone)]
 #[primary_key(uuid)]
 #[table_name = "media"]
 pub struct Media {
@@ -18,6 +22,7 @@ pub struct Media {
     pub description: Option<String>,
     pub absolute_path: String,
     pub price: i32,
+    pub payment_duration: Option<i32>,
     pub published: bool,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
@@ -32,6 +37,7 @@ pub struct NewMedia {
     pub absolute_path: String,
     pub published: bool,
     pub price: i32,
+    pub payment_duration: Option<i32>,
 }
 
 #[derive(Debug, Queryable, AsChangeset)]
@@ -41,6 +47,7 @@ pub struct EditMedia {
     pub description: Option<String>,
     pub published: Option<bool>,
     pub price: Option<i32>,
+    pub payment_duration: Option<i32>,
 }
 
 impl From<EditMediaInput> for EditMedia {
@@ -50,6 +57,7 @@ impl From<EditMediaInput> for EditMedia {
             description: edited_media.description,
             published: edited_media.published,
             price: edited_media.price,
+            payment_duration: edited_media.payment_duration,
         }
     }
 }
@@ -63,6 +71,7 @@ impl From<(&PathBuf, FileInput)> for NewMedia {
             absolute_path: file_data.0.to_string_lossy().to_owned().to_string(),
             price: file_data.1.price,
             published: file_data.1.published,
+            payment_duration: file_data.1.payment_duration,
         }
     }
 }

@@ -15,6 +15,7 @@ table! {
         description -> Nullable<Text>,
         absolute_path -> Text,
         price -> Int4,
+        payment_duration -> Nullable<Int4>,
         published -> Bool,
         created_at -> Timestamptz,
         updated_at -> Timestamptz,
@@ -29,6 +30,7 @@ table! {
         hash -> Text,
         media_uuid -> Uuid,
         expires_at -> Timestamptz,
+        valid_until -> Nullable<Timestamptz>,
     }
 }
 
