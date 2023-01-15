@@ -108,8 +108,8 @@ impl MediaPayment {
 
     pub fn is_expired(&self) -> bool {
         match &self.valid_until {
-            Some(valid_until) => valid_until > &Utc::now().naive_utc(),
-            None => true,
+            Some(valid_until) => valid_until < &Utc::now().naive_utc(),
+            None => false,
         }
     }
 }
