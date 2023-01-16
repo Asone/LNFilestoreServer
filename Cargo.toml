@@ -35,6 +35,7 @@ juniper_rocket_multipart_handler = "0.1.0"
 infer = "0.8.1"
 base64 = "0.13.0"
 juniper_relay_connection = "0.1.1"
+rss = "2.0"
 
 [dependencies.tokio-util]
 version = "0.7.1"

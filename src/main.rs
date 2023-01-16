@@ -35,7 +35,7 @@ use dotenv::dotenv;
 use juniper::EmptySubscription;
 use rocket::Rocket;
 use rocket::{fairing::AdHoc, Route};
-use routes::{auth::login, file::get_file, utils::graphiql, utils::static_index};
+use routes::{auth::login, file::get_file, rss::get_rss, utils::graphiql, utils::static_index};
 use std::env;
 
 use app::{
@@ -92,7 +92,8 @@ fn routes_builder() -> Vec<Route> {
         payable_post_graphql_handler,
         upload,
         login,
-        get_file
+        get_file,
+        get_rss
     ];
 
     let enable_dev_tools = env::var("ENABLE_DEV_TOOLS").unwrap_or("false".to_string());
