@@ -1,6 +1,6 @@
 # LND Filestore 
  
-LN Filestore is a webserver to distribute files over the lightning network.
+LN Filestore is a webserver that provides a pay to download feature based onto the lightnint network.
 
 Its primary use is made for [umbrel](https://www.umbrel.com)
 
